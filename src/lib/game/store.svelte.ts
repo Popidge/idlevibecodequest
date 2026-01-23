@@ -1,4 +1,4 @@
-// Vibe Code Guru - Game Store (Svelte 5 $state)
+// Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
 import { PROJECTS, UPGRADES, PROMPT_MESSAGES, type Upgrade } from './constants';
 import type { GameState, FloatText, Notification } from './types';
@@ -245,7 +245,7 @@ class GameStore {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Vibe Code Guru v0.3 initialized!');
+        console.log('Idle Vibe Code Quest v0.3 initialized!');
     }
 }
 

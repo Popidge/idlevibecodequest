@@ -1,4 +1,4 @@
-// Vibe Code Guru - Game Constants
+// Idle Vibe Code Quest - Game Constants
 
 export const PROJECTS = {
     standard: [

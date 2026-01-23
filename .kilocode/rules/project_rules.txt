@@ -1,6 +1,6 @@
 # project_rules.txt
 
-General rules for the Vibe Code Guru project
+General rules for the Idle Vibe Code Quest project
 
 ## Guidelines
 

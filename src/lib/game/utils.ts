@@ -1,4 +1,4 @@
-// Vibe Code Guru - Utility Functions
+// Idle Vibe Code Quest - Utility Functions
 
 import type { Upgrade } from './constants';
 

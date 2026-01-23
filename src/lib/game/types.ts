@@ -1,4 +1,4 @@
-// Vibe Code Guru - TypeScript Interfaces
+// Idle Vibe Code Quest - TypeScript Interfaces
 
 export interface Resources {
     money: number;
