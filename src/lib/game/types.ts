@@ -45,3 +45,11 @@ export interface OfflineGains {
     cash: number;
     hoursOffline: number;
 }
+
+// Phase 2: Strategic Hint System
+export interface Hint {
+    id: number;
+    message: string;
+    condition: 'debtHigh' | 'debtLow' | 'prestigeSoon';
+    timestamp: number;
+}

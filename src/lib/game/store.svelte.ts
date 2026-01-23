@@ -1,7 +1,7 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
 import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, OfflineGains } from './types';
+import type { GameState, FloatText, Notification, OfflineGains, Hint } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects } from './utils';
 
 // Default game state
@@ -44,6 +44,11 @@ class GameStore {
     offlineGains = $state<OfflineGains | null>(null);
     showOfflineModal = $state(false);
     showDebtModal = $state(false);
+    
+    // Phase 2: Hint system state
+    hints = $state<Hint[]>([]);
+    hintCooldowns = $state<Set<number>>(new Set());
+    hintId = 0;
 
     // Computed values
     get clickPower() {
@@ -58,6 +63,7 @@ class GameStore {
     }
 
     get autoClickRate() {
+        // Legacy: still track for display purposes
         // Returns "clicks per second" from delegation upgrades
         // Each delegation upgrade level N adds N clicks/sec
         let clicksPerSecond = 0;
@@ -69,8 +75,14 @@ class GameStore {
     }
 
     get passiveLocRate() {
-        // Actual LoC/sec after applying clickPower to auto-clicks
-        return this.autoClickRate * this.clickPower;
+        // LoC/sec from delegation: count × (tier + 0.02 × clickPower)
+        // Each copy of an upgrade adds its tier value + 2% of click power
+        let locPerSecond = 0;
+        for (const level in this.gameState.upgrades.delegation) {
+            const count = this.gameState.upgrades.delegation[level];
+            locPerSecond += count * (parseInt(level) + (0.02 * this.clickPower));
+        }
+        return locPerSecond;
     }
 
     get passiveIncome() {
@@ -120,6 +132,33 @@ class GameStore {
     // Check if debt is in warning zone (>10%)
     get isDebtWarning() {
         return this.gameState.techDebt > TECH_DEBT.WARNING_THRESHOLD;
+    }
+    
+    // Phase 2: Find cheapest purchasable upgrade
+    get cheapestUpgrade() {
+        let cheapest: { type: 'vibeCode' | 'delegation'; level: number; cost: number } | null = null;
+        let minCost = Infinity;
+        
+        for (const type of ['vibeCode', 'delegation'] as const) {
+            for (const upgrade of UPGRADES[type]) {
+                if (upgrade.level <= this.maxUpgradeLevel) {
+                    const currentCount = this.gameState.upgrades[type][upgrade.level] || 0;
+                    const cost = getUpgradeCost(upgrade, currentCount);
+                    if (cost < minCost) {
+                        minCost = cost;
+                        cheapest = { type, level: upgrade.level, cost };
+                    }
+                }
+            }
+        }
+        
+        return cheapest;
+    }
+    
+    // Phase 2: Calculate upgrade progress percentage
+    get upgradeProgress() {
+        if (!this.cheapestUpgrade) return 0;
+        return Math.min((this.gameState.resources.loc / this.cheapestUpgrade.cost) * 100, 100);
     }
     
     // Phase 1: Accumulate tech debt (shared by manual and delegation clicks)
@@ -358,15 +397,23 @@ class GameStore {
     startGameLoop() {
         $effect(() => {
             const interval = setInterval(() => {
-                if (this.autoClickRate > 0) {
-                    // Delegation generates "clicks" - each click affected by vibeCode upgrades
+                // Delegation generates LoC/sec
+                if (this.passiveLocRate > 0) {
                     this.gameState.resources.loc += this.passiveLocRate;
-                    // Phase 1: Delegation clicks also accumulate tech debt
-                    this.accumulateDebt();
+                    // Phase 1: Delegation accumulates passive tech debt (0.1× single-click rate per second)
+                    this.gameState.techDebt = Math.min(
+                        this.gameState.techDebt + (TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE),
+                        TECH_DEBT.MAX_DEBT
+                    );
                 }
                 
                 if (this.passiveIncome > 0) {
                     this.gameState.resources.money += this.passiveIncome;
+                }
+                
+                // Phase 2: Check for hints every game tick (with rate limiting)
+                if (Math.random() < 0.1) { // 10% chance per tick to reduce overhead
+                    this.checkAndAddHints();
                 }
             }, 1000);
             
@@ -401,12 +448,56 @@ class GameStore {
             this.notifications = this.notifications.filter(n => n.id !== id);
         }, 2000);
     }
+    
+    // Phase 2: Hint system - Check conditions and add hints
+    private checkAndAddHints() {
+        const now = Date.now();
+        const conditions: { check: () => boolean; condition: Hint['condition']; message: string }[] = [
+            { 
+                check: () => this.gameState.techDebt > 0.4, 
+                condition: 'debtHigh', 
+                message: 'Tech debt high - consider clearing!' 
+            },
+            { 
+                check: () => this.gameState.techDebt < 0.1, 
+                condition: 'debtLow', 
+                message: 'Debt low - good time to save LoC' 
+            }
+        ];
+        
+        for (const { check, condition, message } of conditions) {
+            if (check() && !this.hints.some(h => h.condition === condition)) {
+                this.addHint(message, condition);
+            }
+        }
+    }
+    
+    private addHint(message: string, condition: Hint['condition']) {
+        const id = this.hintId++;
+        this.hints.push({ id, message, condition, timestamp: Date.now() });
+        
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => {
+            this.dismissHint(id);
+        }, 10000);
+    }
+    
+    dismissHint(id: number) {
+        this.hints = this.hints.filter(h => h.id !== id);
+        // Add to cooldown so it doesn't reappear for 60 seconds
+        const cooldownUntil = Date.now() + 60000;
+        this.hintCooldowns = new Set([...this.hintCooldowns, cooldownUntil]);
+        
+        // Clean up old cooldowns
+        const now = Date.now();
+        this.hintCooldowns = new Set([...this.hintCooldowns].filter(c => c > now));
+    }
 
     init() {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.3 initialized!');
+        console.log('Idle Vibe Code Quest v0.3.2 initialized!');
     }
 }
 

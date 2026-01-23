@@ -5,6 +5,7 @@
         formatMoney
     } from '$lib/game/store.svelte';
     import { TECH_DEBT } from '$lib/game/constants';
+    import ProgressBar from './ProgressBar.svelte';
     
     function openDebtModal() {
         store.showDebtModal = true;
@@ -17,6 +18,12 @@
             return percent.toFixed(2) + '%';
         }
         return percent.toFixed(1) + '%';
+    }
+    
+    // Format progress bar label
+    function formatProgressLabel(): string {
+        if (!store.cheapestUpgrade) return '';
+        return `${formatNumber(store.gameState.resources.loc)} / ${formatNumber(store.cheapestUpgrade.cost)} LoC`;
     }
 </script>
 
@@ -65,10 +72,6 @@
             <span class="stat-value">{formatNumber(store.clickPower)} LoC/click</span>
         </div>
         <div class="stat-row">
-            <span class="stat-label">Auto:</span>
-            <span class="stat-value">{formatNumber(store.autoClickRate)} clicks/sec</span>
-        </div>
-        <div class="stat-row">
             <span class="stat-label">Delegation:</span>
             <span class="stat-value">{formatNumber(store.passiveLocRate)} LoC/sec</span>
         </div>
@@ -81,6 +84,18 @@
                 {/if}
             </span>
         </div>
+        
+        <!-- Phase 2: Progress bar for next upgrade -->
+        {#if store.cheapestUpgrade}
+            <div class="progress-section">
+                <div class="progress-label">Next Upgrade:</div>
+                <ProgressBar 
+                    current={store.gameState.resources.loc} 
+                    max={store.cheapestUpgrade.cost} 
+                    label={formatProgressLabel()}
+                />
+            </div>
+        {/if}
     </div>
     <div class="panel-footer">└─────────────────────────┘</div>
 </div>
@@ -232,5 +247,20 @@
         background-color: var(--text-amber, #ffb000);
         color: var(--panel-bg, #0f0f0f);
         animation: none;
+    }
+    
+    /* Phase 2: Progress bar section */
+    .progress-section {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--text-dim, #008800);
+    }
+    
+    .progress-label {
+        color: var(--text-dim, #008800);
+        font-size: 10px;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 </style>

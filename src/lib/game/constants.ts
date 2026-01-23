@@ -53,16 +53,16 @@ export const UPGRADES = {
         { level: 10, cost: 13107200, name: 'Code God Mode', desc: '+10 LoC/click' }
     ],
     delegation: [
-        { level: 1, cost: 100, name: 'Hire Intern', desc: '1 click/sec' },
-        { level: 2, cost: 500, name: 'Junior Dev', desc: '2 clicks/sec' },
-        { level: 3, cost: 2000, name: 'Senior Dev', desc: '3 clicks/sec' },
-        { level: 4, cost: 8000, name: 'Tech Lead', desc: '4 clicks/sec' },
-        { level: 5, cost: 32000, name: 'Engineering Team', desc: '5 clicks/sec' },
-        { level: 6, cost: 128000, name: 'Offshore Squad', desc: '6 clicks/sec' },
-        { level: 7, cost: 512000, name: 'DevOps Army', desc: '7 clicks/sec' },
-        { level: 8, cost: 2048000, name: 'AI Agents', desc: '8 clicks/sec' },
-        { level: 9, cost: 8192000, name: 'Robotic Process', desc: '9 clicks/sec' },
-        { level: 10, cost: 32768000, name: 'Self-Coding AI', desc: '10 clicks/sec' }
+        { level: 1, cost: 100, name: 'Hire Intern', desc: 'Auto-generates LoC' },
+        { level: 2, cost: 500, name: 'Junior Dev', desc: 'Auto-generates LoC' },
+        { level: 3, cost: 2000, name: 'Senior Dev', desc: 'Auto-generates LoC' },
+        { level: 4, cost: 8000, name: 'Tech Lead', desc: 'Auto-generates LoC' },
+        { level: 5, cost: 32000, name: 'Engineering Team', desc: 'Auto-generates LoC' },
+        { level: 6, cost: 128000, name: 'Offshore Squad', desc: 'Auto-generates LoC' },
+        { level: 7, cost: 512000, name: 'DevOps Army', desc: 'Auto-generates LoC' },
+        { level: 8, cost: 2048000, name: 'AI Agents', desc: 'Auto-generates LoC' },
+        { level: 9, cost: 8192000, name: 'Robotic Process', desc: 'Auto-generates LoC' },
+        { level: 10, cost: 32768000, name: 'Self-Coding AI', desc: 'Auto-generates LoC' }
     ]
 } as const;
 
@@ -103,8 +103,9 @@ export const PROMPT_MESSAGES = [
 
 // Phase 1: Tech Debt System Constants
 export const TECH_DEBT = {
-    BASE_ACCUMULATION: 0.00008,          // Base debt per click (manual or delegation)
+    BASE_ACCUMULATION: 0.00008,          // Base debt per click (manual only)
     PER_PROJECT: 0.00001,                // Additional debt per project shipped
+    DELEGATION_DEBT_RATE: 0.1,           // Delegation gains 0.1× single-click debt per second
     MAX_DEBT: 0.5,                       // 50% maximum debt
     DEBT_PENALTY_SQUARED: true,          // Apply squared penalty: (1 - debt)²
     REDUCTION_BASE_LOC_COST: 200,        // Base LoC cost per 0.01 debt

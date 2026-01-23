@@ -9,6 +9,8 @@
     // Phase 1: Modal imports
     import DebtReductionModal from './lib/components/DebtReductionModal.svelte';
     import OfflineGainsModal from './lib/components/OfflineGainsModal.svelte';
+    // Phase 2: Hint system
+    import HintsContainer from './lib/components/HintsContainer.svelte';
     import { store } from './lib/game/store.svelte';
 
     onMount(() => {
@@ -26,6 +28,8 @@
     <!-- Phase 1: Modals -->
     <DebtReductionModal />
     <OfflineGainsModal />
+    <!-- Phase 2: Hint system -->
+    <HintsContainer />
 </div>
 
 <style>

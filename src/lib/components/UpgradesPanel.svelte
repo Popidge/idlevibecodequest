@@ -12,6 +12,13 @@
     function handleTabClick(type: UpgradeType) {
         store.switchTab('upgrades', type);
     }
+    
+    // Get click power reactively
+    let clickPower = $state(store.clickPower);
+    
+    $effect(() => {
+        clickPower = store.clickPower;
+    });
 </script>
 
 <div class="panel upgrades-panel">
@@ -37,6 +44,7 @@
                         {@const isUnlocked = upgrade.level <= store.maxUpgradeLevel}
                         {@const currentCount = store.gameState.upgrades[type.key][upgrade.level] || 0}
                         {@const currentCost = getUpgradeCost(upgrade, currentCount)}
+                        {@const delegLocSec = type.key === 'delegation' ? (upgrade.level + (0.02 * clickPower)).toFixed(2) : '0'}
                         <button 
                             class="upgrade-item"
                             class:locked={!isUnlocked}
@@ -55,7 +63,9 @@
                                     {/if}
                                 </span>
                                 <span class="item-cost">${formatNumber(currentCost)}</span>
-                                <span class="item-reward">→ {upgrade.desc}</span>
+                                <span class="item-reward">
+                                    → {type.key === 'delegation' ? `+${delegLocSec} LoC/sec` : upgrade.desc}
+                                </span>
                             {/if}
                         </button>
                     {/each}
