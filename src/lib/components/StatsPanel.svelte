@@ -31,7 +31,11 @@
         </div>
         <div class="stat-row">
             <span class="stat-label">Auto:</span>
-            <span class="stat-value">{formatNumber(store.autoClickRate)}/sec</span>
+            <span class="stat-value">{formatNumber(store.autoClickRate)} clicks/sec</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Delegation:</span>
+            <span class="stat-value">{formatNumber(store.passiveLocRate)} LoC/sec</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Passive:</span>

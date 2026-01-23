@@ -41,28 +41,28 @@ export const PROJECTS = {
 
 export const UPGRADES = {
     vibeCode: [
-        { level: 1, cost: 50, multiplier: 2, name: 'Vibe Coding Basics', desc: '2x LoC per click' },
-        { level: 2, cost: 200, multiplier: 2, name: 'Copilot Addiction', desc: '4x LoC per click' },
-        { level: 3, cost: 800, multiplier: 2, name: 'StackOverflow Warrior', desc: '8x LoC per click' },
-        { level: 4, cost: 3200, multiplier: 2, name: 'ChatGPT Overflow', desc: '16x LoC per click' },
-        { level: 5, cost: 12800, multiplier: 2, name: 'Prompt Engineer', desc: '32x LoC per click' },
-        { level: 6, cost: 51200, multiplier: 2, name: 'AI Whisperer', desc: '64x LoC per click' },
-        { level: 7, cost: 204800, multiplier: 2, name: 'Neural Network', desc: '128x LoC per click' },
-        { level: 8, cost: 819200, multiplier: 2, name: 'Machine Mind', desc: '256x LoC per click' },
-        { level: 9, cost: 3276800, multiplier: 2, name: 'AGI Integration', desc: '512x LoC per click' },
-        { level: 10, cost: 13107200, multiplier: 2, name: 'Code God Mode', desc: '1024x LoC per click' }
+        { level: 1, cost: 50, name: 'Vibe Coding Basics', desc: '+1 LoC/click' },
+        { level: 2, cost: 200, name: 'Copilot Addiction', desc: '+2 LoC/click' },
+        { level: 3, cost: 800, name: 'StackOverflow Warrior', desc: '+3 LoC/click' },
+        { level: 4, cost: 3200, name: 'ChatGPT Overflow', desc: '+4 LoC/click' },
+        { level: 5, cost: 12800, name: 'Prompt Engineer', desc: '+5 LoC/click' },
+        { level: 6, cost: 51200, name: 'AI Whisperer', desc: '+6 LoC/click' },
+        { level: 7, cost: 204800, name: 'Neural Network', desc: '+7 LoC/click' },
+        { level: 8, cost: 819200, name: 'Machine Mind', desc: '+8 LoC/click' },
+        { level: 9, cost: 3276800, name: 'AGI Integration', desc: '+9 LoC/click' },
+        { level: 10, cost: 13107200, name: 'Code God Mode', desc: '+10 LoC/click' }
     ],
     delegation: [
-        { level: 1, cost: 100, autoLoc: 1, name: 'Hire Intern', desc: '1 LoC/sec' },
-        { level: 2, cost: 500, autoLoc: 3, name: 'Junior Dev', desc: '3 LoC/sec' },
-        { level: 3, cost: 2000, autoLoc: 8, name: 'Senior Dev', desc: '8 LoC/sec' },
-        { level: 4, cost: 8000, autoLoc: 20, name: 'Tech Lead', desc: '20 LoC/sec' },
-        { level: 5, cost: 32000, autoLoc: 50, name: 'Engineering Team', desc: '50 LoC/sec' },
-        { level: 6, cost: 128000, autoLoc: 125, name: 'Offshore Squad', desc: '125 LoC/sec' },
-        { level: 7, cost: 512000, autoLoc: 300, name: 'DevOps Army', desc: '300 LoC/sec' },
-        { level: 8, cost: 2048000, autoLoc: 750, name: 'AI Agents', desc: '750 LoC/sec' },
-        { level: 9, cost: 8192000, autoLoc: 1800, name: 'Robotic Process', desc: '1800 LoC/sec' },
-        { level: 10, cost: 32768000, autoLoc: 4500, name: 'Self-Coding AI', desc: '4500 LoC/sec' }
+        { level: 1, cost: 100, name: 'Hire Intern', desc: '1 click/sec' },
+        { level: 2, cost: 500, name: 'Junior Dev', desc: '2 clicks/sec' },
+        { level: 3, cost: 2000, name: 'Senior Dev', desc: '3 clicks/sec' },
+        { level: 4, cost: 8000, name: 'Tech Lead', desc: '4 clicks/sec' },
+        { level: 5, cost: 32000, name: 'Engineering Team', desc: '5 clicks/sec' },
+        { level: 6, cost: 128000, name: 'Offshore Squad', desc: '6 clicks/sec' },
+        { level: 7, cost: 512000, name: 'DevOps Army', desc: '7 clicks/sec' },
+        { level: 8, cost: 2048000, name: 'AI Agents', desc: '8 clicks/sec' },
+        { level: 9, cost: 8192000, name: 'Robotic Process', desc: '9 clicks/sec' },
+        { level: 10, cost: 32768000, name: 'Self-Coding AI', desc: '10 clicks/sec' }
     ]
 } as const;
 

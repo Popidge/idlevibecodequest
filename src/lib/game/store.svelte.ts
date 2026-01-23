@@ -38,22 +38,30 @@ class GameStore {
 
     // Computed values
     get clickPower() {
-        let totalLevels = 0;
+        // Each vibeCode upgrade level adds its level number to LoC per click
+        // Level 1 = +1, Level 2 = +2, etc.
+        let power = 1; // Base power
         for (const level in this.gameState.upgrades.vibeCode) {
-            totalLevels += this.gameState.upgrades.vibeCode[level];
+            const count = this.gameState.upgrades.vibeCode[level];
+            power += parseInt(level) * count;
         }
-        return Math.pow(2, totalLevels);
+        return power;
     }
 
     get autoClickRate() {
-        const DELEGATION_VALUES = [1, 3, 8, 20, 50, 125, 300, 750, 1800, 4500];
-        let rate = 0;
+        // Returns "clicks per second" from delegation upgrades
+        // Each delegation upgrade level N adds N clicks/sec
+        let clicksPerSecond = 0;
         for (const level in this.gameState.upgrades.delegation) {
             const count = this.gameState.upgrades.delegation[level];
-            const index = (parseInt(level) - 1) % DELEGATION_VALUES.length;
-            rate += DELEGATION_VALUES[index] * count;
+            clicksPerSecond += parseInt(level) * count;
         }
-        return rate;
+        return clicksPerSecond;
+    }
+
+    get passiveLocRate() {
+        // Actual LoC/sec after applying clickPower to auto-clicks
+        return this.autoClickRate * this.clickPower;
     }
 
     get passiveIncome() {
@@ -192,7 +200,8 @@ class GameStore {
         $effect(() => {
             const interval = setInterval(() => {
                 if (this.autoClickRate > 0) {
-                    this.gameState.resources.loc += this.autoClickRate;
+                    // Delegation generates "clicks" - each click affected by vibeCode upgrades
+                    this.gameState.resources.loc += this.passiveLocRate;
                 }
                 
                 if (this.passiveIncome > 0) {
