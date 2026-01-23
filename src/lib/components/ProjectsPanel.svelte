@@ -13,6 +13,23 @@
     function handleTabClick(type: ProjectType) {
         store.switchTab('projects', type);
     }
+    
+    // Calculate effective reward with tech debt penalty
+    function getEffectiveReward(rawReward: number): number {
+        const penaltyFactor = Math.pow(1 - store.gameState.techDebt, 2);
+        return rawReward * penaltyFactor;
+    }
+    
+    // Calculate effective cred with tech debt penalty
+    function getEffectiveCred(rawCred: number): number {
+        const penaltyFactor = Math.pow(1 - store.gameState.techDebt, 2);
+        return rawCred * penaltyFactor;
+    }
+    
+    // Format money with 2 decimal places
+    function formatMoney(amount: number): string {
+        return amount.toFixed(2);
+    }
 </script>
 
 <div class="panel projects-panel">
@@ -56,8 +73,8 @@
                                 </span>
                                 <span class="item-cost">{formatNumber(project.locCost)} LoC</span>
                                 <span class="item-reward">
-                                    → ${formatNumber(project.reward)}
-                                    {#if project.cred > 0} + {project.cred} Cred{/if}
+                                    → ${formatMoney(getEffectiveReward(project.reward))}
+                                    {#if project.cred > 0} + {getEffectiveCred(project.cred).toFixed(0)} Cred{/if}
                                     {#if 'recurring' in project && project.recurring} (recurring){/if}
                                 </span>
                             {/if}

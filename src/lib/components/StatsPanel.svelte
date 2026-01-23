@@ -3,6 +3,25 @@
         store,
         formatNumber 
     } from '$lib/game/store.svelte';
+    import { TECH_DEBT } from '$lib/game/constants';
+    
+    function openDebtModal() {
+        store.showDebtModal = true;
+    }
+    
+    // Better precision for debt display
+    function formatDebt(debt: number): string {
+        const percent = debt * 100;
+        if (percent < 1) {
+            return percent.toFixed(2) + '%';
+        }
+        return percent.toFixed(1) + '%';
+    }
+    
+    // Format money with 2 decimal places
+    function formatMoney(amount: number): string {
+        return amount.toFixed(2);
+    }
 </script>
 
 <div class="panel stats-panel">
@@ -10,7 +29,7 @@
     <div class="panel-content stats-content">
         <div class="stat-row">
             <span class="stat-label">Money:</span>
-            <span class="stat-value">${formatNumber(store.gameState.resources.money)}</span>
+            <span class="stat-value">${formatMoney(store.gameState.resources.money)}</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">LoC:</span>
@@ -24,6 +43,26 @@
             <span class="stat-label">Clicks:</span>
             <span class="stat-value">{formatNumber(store.gameState.totalClicks)}</span>
         </div>
+        <div class="stat-divider">┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</div>
+        
+        <!-- Phase 1: Tech Debt Display -->
+        <div class="stat-row tech-debt-row" class:warning={store.isDebtWarning}>
+            <span class="stat-label">Tech Debt:</span>
+            <div class="debt-container">
+                <span class="debt-value">{formatDebt(store.gameState.techDebt)}</span>
+                {#if store.gameState.techDebt > TECH_DEBT.WARNING_THRESHOLD}
+                    <span class="debt-multiplier" title="Income multiplier">
+                        (×{(Math.pow(1 - store.gameState.techDebt, 2) * 100).toFixed(0)}%)
+                    </span>
+                {/if}
+            </div>
+        </div>
+        {#if store.isDebtWarning}
+            <div class="clear-btn-container">
+                <button class="clear-btn" onclick={openDebtModal}>CLEAR</button>
+            </div>
+        {/if}
+        
         <div class="stat-divider">┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</div>
         <div class="stat-row">
             <span class="stat-label">Power:</span>
@@ -39,7 +78,12 @@
         </div>
         <div class="stat-row">
             <span class="stat-label">Passive:</span>
-            <span class="stat-value">${formatNumber(store.passiveIncome)}/sec</span>
+            <span class="stat-value" class:penalized={store.gameState.techDebt > 0}>
+                ${formatMoney(store.effectivePassiveIncome)}/sec
+                {#if store.gameState.techDebt > 0}
+                    <span class="original-value">(${formatMoney(store.passiveIncome)})</span>
+                {/if}
+            </span>
         </div>
     </div>
     <div class="panel-footer">└─────────────────────────┘</div>
@@ -104,11 +148,93 @@
         font-size: 13px;
         font-weight: bold;
     }
+    
+    .stat-value.penalized {
+        color: var(--text-primary, #00ff00);
+    }
+    
+    .original-value {
+        color: var(--text-dim, #008800);
+        font-size: 11px;
+        text-decoration: line-through;
+        margin-left: 4px;
+        font-weight: normal;
+    }
 
     .stat-divider {
         color: var(--text-dim, #008800);
         font-size: 10px;
         text-align: center;
         padding: 4px 0;
+    }
+    
+    /* Phase 1: Tech Debt Styling */
+    .tech-debt-row {
+        padding: 4px 0;
+    }
+    
+    .tech-debt-row.warning {
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    
+    .debt-value {
+        font-size: 14px;
+        font-weight: bold;
+        color: var(--text-primary, #00ff00);
+    }
+    
+    .debt-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: nowrap;
+        max-width: 120px;
+    }
+    
+    .debt-multiplier {
+        font-size: 9px;
+        color: var(--text-dim, #008800);
+        font-weight: normal;
+        white-space: nowrap;
+    }
+    
+    .tech-debt-row.warning .debt-value {
+        color: var(--text-amber, #ffb000);
+    }
+    
+    .clear-btn-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 4px;
+    }
+    
+    .clear-btn {
+        background-color: var(--button-bg, #1a1a1a);
+        color: var(--text-amber, #ffb000);
+        border: 1px solid var(--text-amber, #ffb000);
+        padding: 4px 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.5; }
+    }
+    
+    .clear-btn:hover {
+        background-color: var(--text-amber, #ffb000);
+        color: var(--panel-bg, #0f0f0f);
+        animation: none;
     }
 </style>

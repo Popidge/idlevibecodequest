@@ -6,6 +6,9 @@
     import UpgradesPanel from './lib/components/UpgradesPanel.svelte';
     import PromptPanel from './lib/components/PromptPanel.svelte';
     import Notification from './lib/components/Notification.svelte';
+    // Phase 1: Modal imports
+    import DebtReductionModal from './lib/components/DebtReductionModal.svelte';
+    import OfflineGainsModal from './lib/components/OfflineGainsModal.svelte';
     import { store } from './lib/game/store.svelte';
 
     onMount(() => {
@@ -20,6 +23,9 @@
     <UpgradesPanel />
     <PromptPanel />
     <Notification />
+    <!-- Phase 1: Modals -->
+    <DebtReductionModal />
+    <OfflineGainsModal />
 </div>
 
 <style>

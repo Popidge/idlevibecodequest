@@ -22,6 +22,10 @@ export interface GameState {
         projects: 'standard' | 'saas' | 'openSource';
         upgrades: 'vibeCode' | 'delegation';
     };
+    // Phase 1: Tech Debt System
+    techDebt: number;
+    projectsShipped: number;
+    lastSaveTime: number;
 }
 
 export interface FloatText {
@@ -34,4 +38,10 @@ export interface FloatText {
 export interface Notification {
     id: number;
     message: string;
+}
+
+export interface OfflineGains {
+    loc: number;
+    cash: number;
+    hoursOffline: number;
 }

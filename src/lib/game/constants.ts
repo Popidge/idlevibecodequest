@@ -101,6 +101,21 @@ export const PROMPT_MESSAGES = [
     "Deploy to production..."
 ] as const;
 
+// Phase 1: Tech Debt System Constants
+export const TECH_DEBT = {
+    BASE_ACCUMULATION: 0.00008,          // Base debt per click (manual or delegation)
+    PER_PROJECT: 0.00001,                // Additional debt per project shipped
+    MAX_DEBT: 0.5,                       // 50% maximum debt
+    DEBT_PENALTY_SQUARED: true,          // Apply squared penalty: (1 - debt)²
+    REDUCTION_BASE_LOC_COST: 200,        // Base LoC cost per 0.01 debt
+    REDUCTION_LOC_MULTIPLIER: 4,         // LoC cost multiplier per project shipped
+    REDUCTION_BASE_CASH_COST: 1000,      // Base Cash cost per 0.01 debt
+    REDUCTION_CASH_MULTIPLIER: 20,       // Cash cost multiplier per project shipped
+    MIN_REDUCTION: 0.01,                 // Minimum debt reduction amount
+    WARNING_THRESHOLD: 0.1,              // Show warning and clear button when debt > 10%
+    OFFLINE_RATE: 0.1                    // 10% of normal rates while offline
+} as const;
+
 export type ProjectType = keyof typeof PROJECTS;
 export type UpgradeType = keyof typeof UPGRADES;
 export type Project = (typeof PROJECTS.standard)[number] | (typeof PROJECTS.saas)[number] | (typeof PROJECTS.openSource)[number];
