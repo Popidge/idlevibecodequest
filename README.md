@@ -34,7 +34,7 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 
 ```bash
 # Clone the repo
-git clone https://github.com/popidge/idle-vibe-code-quest.git
+git clone https://github.com/popidge/idlevibecodequest.git
 cd idle-vibe-code-quest
 
 # Install dependencies
