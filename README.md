@@ -6,7 +6,7 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 
 **Your mission:** Ship projects, earn cred, upgrade your vibe, and become the ultimate prompt engineer.
 
-![Vibe Code Guru Screenshot](https://via.placeholder.com/800x400/1a1a2e/00ff88?text=Vibe+Code+Guru+Preview)
+![Vibe Code Guru Screenshot](vgc_screenshot.png)
 
 ---
 
