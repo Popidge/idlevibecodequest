@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { saveGame, resetGame } from '$lib/game/store';
+    import { store } from '$lib/game/store.svelte';
 </script>
 
 <div class="panel title-panel">
@@ -17,8 +17,8 @@
         </pre>
     </div>
     <div class="panel-footer title-footer">
-        <button class="window-btn" onclick={saveGame}>[ SAVE ]</button>
-        <button class="window-btn" onclick={resetGame}>[ RESET ]</button>
+        <button class="window-btn" onclick={() => store.saveGame()}>[ SAVE ]</button>
+        <button class="window-btn" onclick={() => store.resetGame()}>[ RESET ]</button>
     </div>
 </div>
 

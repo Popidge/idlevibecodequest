@@ -6,10 +6,10 @@
     import UpgradesPanel from './lib/components/UpgradesPanel.svelte';
     import PromptPanel from './lib/components/PromptPanel.svelte';
     import Notification from './lib/components/Notification.svelte';
-    import { initGame } from './lib/game/store';
+    import { store } from './lib/game/store.svelte';
 
     onMount(() => {
-        initGame();
+        store.init();
     });
 </script>
 

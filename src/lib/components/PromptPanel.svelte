@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { currentPrompt, handlePromptClick, floatTexts } from '$lib/game/store';
+    import { store } from '$lib/game/store.svelte';
 
     function handleClick(event: MouseEvent) {
-        handlePromptClick(event);
+        store.handlePromptClick(event);
     }
 </script>
 
@@ -10,7 +10,7 @@
     <div class="prompt-panel">
         <div class="prompt-row">
             <div class="prompt-display">
-                <span class="prompt-cursor">></span> <span class="prompt-output">{currentPrompt}</span>
+                <span class="prompt-cursor">></span> <span class="prompt-output">{store.currentPrompt}</span>
             </div>
             <button id="prompt-btn" class="prompt-button" onclick={handleClick}>&#62; PROMPT &#60;</button>
         </div>
@@ -25,7 +25,7 @@
 </div>
 
 <!-- Float text animations -->
-{#each floatTexts as floatText (floatText.id)}
+{#each store.floatTexts as floatText (floatText.id)}
     <div 
         class="float-text" 
         style="left: {floatText.x}px; top: {floatText.y}px;"

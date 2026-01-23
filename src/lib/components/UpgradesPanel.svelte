@@ -1,6 +1,6 @@
 <script lang="ts">
     import { UPGRADES } from '$lib/game/constants';
-    import { gameState, switchTab, buyUpgrade, maxUpgradeLevel, getUpgradeCost, formatNumber } from '$lib/game/store';
+    import { store, getUpgradeCost, formatNumber } from '$lib/game/store.svelte';
     import { getRequiredCredForUpgrade } from '$lib/game/utils';
 
     type UpgradeType = 'vibeCode' | 'delegation';
@@ -10,7 +10,7 @@
     ];
 
     function handleTabClick(type: UpgradeType) {
-        switchTab('upgrades', type);
+        store.switchTab('upgrades', type);
     }
 </script>
 
@@ -21,7 +21,7 @@
             {#each upgradeTypes as type}
                 <button 
                     class="tab-btn" 
-                    class:active={gameState.activeTab.upgrades === type.key}
+                    class:active={store.gameState.activeTab.upgrades === type.key}
                     onclick={() => handleTabClick(type.key)}
                 >
                     [ {type.label} ]
@@ -31,17 +31,17 @@
     </div>
     <div class="panel-content upgrades-content">
         {#each upgradeTypes as type}
-            <div class="tab-content" class:active={gameState.activeTab.upgrades === type.key}>
+            <div class="tab-content" class:active={store.gameState.activeTab.upgrades === type.key}>
                 <div class="item-list">
                     {#each UPGRADES[type.key] as upgrade}
-                        {@const isUnlocked = upgrade.level <= maxUpgradeLevel}
-                        {@const currentCount = gameState.upgrades[type.key][upgrade.level] || 0}
+                        {@const isUnlocked = upgrade.level <= store.maxUpgradeLevel}
+                        {@const currentCount = store.gameState.upgrades[type.key][upgrade.level] || 0}
                         {@const currentCost = getUpgradeCost(upgrade, currentCount)}
                         <button 
                             class="upgrade-item"
                             class:locked={!isUnlocked}
                             class:purchased={currentCount > 0}
-                            onclick={() => isUnlocked && buyUpgrade(type.key, upgrade.level)}
+                            onclick={() => isUnlocked && store.buyUpgrade(type.key, upgrade.level)}
                             disabled={!isUnlocked}
                         >
                             {#if !isUnlocked}

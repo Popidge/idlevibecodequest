@@ -1,11 +1,8 @@
 <script lang="ts">
     import { 
-        gameState, 
-        clickPower, 
-        autoClickRate, 
-        passiveIncome,
+        store,
         formatNumber 
-    } from '$lib/game/store';
+    } from '$lib/game/store.svelte';
 </script>
 
 <div class="panel stats-panel">
@@ -13,32 +10,32 @@
     <div class="panel-content stats-content">
         <div class="stat-row">
             <span class="stat-label">Money:</span>
-            <span class="stat-value">${formatNumber(gameState.resources.money)}</span>
+            <span class="stat-value">${formatNumber(store.gameState.resources.money)}</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">LoC:</span>
-            <span class="stat-value">{formatNumber(gameState.resources.loc)}</span>
+            <span class="stat-value">{formatNumber(store.gameState.resources.loc)}</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Cred:</span>
-            <span class="stat-value">{formatNumber(gameState.resources.cred)}</span>
+            <span class="stat-value">{formatNumber(store.gameState.resources.cred)}</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Clicks:</span>
-            <span class="stat-value">{formatNumber(gameState.totalClicks)}</span>
+            <span class="stat-value">{formatNumber(store.gameState.totalClicks)}</span>
         </div>
         <div class="stat-divider">┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</div>
         <div class="stat-row">
             <span class="stat-label">Power:</span>
-            <span class="stat-value">{formatNumber(clickPower)} LoC/click</span>
+            <span class="stat-value">{formatNumber(store.clickPower)} LoC/click</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Auto:</span>
-            <span class="stat-value">{formatNumber(autoClickRate)}/sec</span>
+            <span class="stat-value">{formatNumber(store.autoClickRate)}/sec</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Passive:</span>
-            <span class="stat-value">${formatNumber(passiveIncome)}/sec</span>
+            <span class="stat-value">${formatNumber(store.passiveIncome)}/sec</span>
         </div>
     </div>
     <div class="panel-footer">└─────────────────────────┘</div>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { PROJECTS } from '$lib/game/constants';
-    import { gameState, switchTab, shipProject, unlockedProjects, formatNumber } from '$lib/game/store';
+    import { store, formatNumber } from '$lib/game/store.svelte';
     import { getRequiredCredForProject } from '$lib/game/utils';
 
     type ProjectType = 'standard' | 'saas' | 'openSource';
@@ -11,7 +11,7 @@
     ];
 
     function handleTabClick(type: ProjectType) {
-        switchTab('projects', type);
+        store.switchTab('projects', type);
     }
 </script>
 
@@ -22,7 +22,7 @@
             {#each projectTypes as type}
                 <button 
                     class="tab-btn" 
-                    class:active={gameState.activeTab.projects === type.key}
+                    class:active={store.gameState.activeTab.projects === type.key}
                     onclick={() => handleTabClick(type.key)}
                 >
                     [ {type.label} ]
@@ -32,16 +32,16 @@
     </div>
     <div class="panel-content projects-content">
         {#each projectTypes as type}
-            <div class="tab-content" class:active={gameState.activeTab.projects === type.key}>
+            <div class="tab-content" class:active={store.gameState.activeTab.projects === type.key}>
                 <div class="item-list">
                     {#each PROJECTS[type.key] as project}
-                        {@const count = gameState.projects[type.key][project.id] || 0}
-                        {@const isUnlocked = unlockedProjects.includes(project.id)}
+                        {@const count = store.gameState.projects[type.key][project.id] || 0}
+                        {@const isUnlocked = store.unlockedProjects.includes(project.id)}
                         <button 
                             class="project-item"
                             class:locked={!isUnlocked}
                             class:purchased={count > 0}
-                            onclick={() => isUnlocked && shipProject(type.key, project.id)}
+                            onclick={() => isUnlocked && store.shipProject(type.key, project.id)}
                             disabled={!isUnlocked}
                         >
                             {#if !isUnlocked}

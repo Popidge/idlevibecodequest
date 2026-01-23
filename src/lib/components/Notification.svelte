@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { notifications } from '$lib/game/store';
+    import { store } from '$lib/game/store.svelte';
 </script>
 
-{#each notifications as notification (notification.id)}
+{#each store.notifications as notification (notification.id)}
     <div class="notification">
         {notification.message}
     </div>
