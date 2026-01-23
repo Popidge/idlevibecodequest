@@ -1,0 +1,10 @@
+# project_rules.txt
+
+General rules for the Vibe Code Guru project
+
+## Guidelines
+
+- Use pnpm for node package management
+- Use type-safe, idiomatic TypeScript
+- Use modern, idiomatic Svelte 5 and Vite for all features
+- Avoid other dependencies where possible - if you want to use a package, mention it to the user and what features you plan on using - see if we can code them ourselves.

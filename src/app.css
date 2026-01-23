@@ -1,0 +1,86 @@
+/* Vibe Code Guru - Terminal Theme CSS */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #0a0a0a;
+    --terminal-bg: #0d0d0d;
+    --panel-bg: #0f0f0f;
+    --text-primary: #00ff00;
+    --text-secondary: #00cc00;
+    --text-dim: #008800;
+    --text-amber: #ffb000;
+    --text-white: #ffffff;
+    --border-color: #00ff00;
+    --button-bg: #1a1a1a;
+    --button-hover: #2a2a2a;
+    --button-active: #3a3a3a;
+    --disabled-color: #444444;
+    --tab-active-bg: #1a3a1a;
+    --tab-active-border: #00ff00;
+}
+
+body {
+    font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+}
+
+#app {
+    width: 100%;
+    max-width: 1400px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--terminal-bg, #0d0d0d);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-dim, #008800);
+    border: 1px solid var(--border-color, #00ff00);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary, #00cc00);
+}
+
+/* Custom Scrollbar for Panels */
+.panel-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: var(--panel-bg, #0f0f0f);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background: var(--text-dim, #008800);
+}
+
+/* Status Message (in footer) */
+.status-message {
+    color: var(--text-amber, #ffb000);
+    animation: fadeOut 2s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
