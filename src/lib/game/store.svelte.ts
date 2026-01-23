@@ -1,6 +1,6 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, type Upgrade } from './constants';
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, type Upgrade, type Project } from './constants';
 import type { GameState, FloatText, Notification, OfflineGains } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects } from './utils';
 
@@ -151,12 +151,15 @@ class GameStore {
         
         if (!project) return;
         
-        if (this.gameState.resources.loc < project.locCost) {
+        const currentCount = this.gameState.projects[type][projectId] || 0;
+        const scaledLocCost = getProjectLocCost(project, currentCount);
+        
+        if (this.gameState.resources.loc < scaledLocCost) {
             this.showNotification('Not enough LoC!');
             return;
         }
         
-        this.gameState.resources.loc -= project.locCost;
+        this.gameState.resources.loc -= scaledLocCost;
         
         // Phase 1: Apply tech debt penalty to cash and cred rewards
         const penaltyFactor = Math.pow(1 - this.gameState.techDebt, 2);
@@ -166,7 +169,6 @@ class GameStore {
         this.gameState.resources.money += effectiveMoneyReward;
         this.gameState.resources.cred += effectiveCredReward;
         
-        const currentCount = this.gameState.projects[type][projectId] || 0;
         this.gameState.projects[type][projectId] = currentCount + 1;
         
         // Phase 1: Track total projects shipped for debt calculation
@@ -424,4 +426,20 @@ export function formatNumber(num: number): string {
 export function getUpgradeCost(upgrade: Upgrade, count: number): number {
     const costMultiplier = Math.pow(1.15, count);
     return Math.floor(upgrade.cost * costMultiplier);
+}
+
+export function getProjectLocCost(project: Project, count: number): number {
+    const costMultiplier = Math.pow(1.15, count);
+    return Math.floor(project.locCost * costMultiplier);
+}
+
+export function formatMoney(amount: number): string {
+    if (amount >= 1000000000) {
+        return (amount / 1000000000).toFixed(1) + 'B';
+    } else if (amount >= 1000000) {
+        return (amount / 1000000).toFixed(1) + 'M';
+    } else if (amount >= 10000) {
+        return (amount / 1000).toFixed(1) + 'K';
+    }
+    return amount.toFixed(2);
 }

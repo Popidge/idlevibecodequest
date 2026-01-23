@@ -1,7 +1,8 @@
 <script lang="ts">
     import { 
         store,
-        formatNumber 
+        formatNumber,
+        formatMoney
     } from '$lib/game/store.svelte';
     import { TECH_DEBT } from '$lib/game/constants';
     
@@ -16,11 +17,6 @@
             return percent.toFixed(2) + '%';
         }
         return percent.toFixed(1) + '%';
-    }
-    
-    // Format money with 2 decimal places
-    function formatMoney(amount: number): string {
-        return amount.toFixed(2);
     }
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { PROJECTS } from '$lib/game/constants';
-    import { store, formatNumber } from '$lib/game/store.svelte';
+    import { store, formatNumber, formatMoney, getProjectLocCost } from '$lib/game/store.svelte';
     import { getRequiredCredForProject } from '$lib/game/utils';
 
     type ProjectType = 'standard' | 'saas' | 'openSource';
@@ -26,9 +26,9 @@
         return rawCred * penaltyFactor;
     }
     
-    // Format money with 2 decimal places
-    function formatMoney(amount: number): string {
-        return amount.toFixed(2);
+    // Format shipped count as version number (v0.1, v1.2, v14.8, etc.)
+    function formatVersion(count: number): string {
+        return `v${(count / 10).toFixed(1)}`;
     }
 </script>
 
@@ -68,10 +68,10 @@
                                 <span class="item-name">
                                     {project.name}
                                     {#if count > 0}
-                                        <span class="count-badge">[{count}]</span>
+                                        <span class="count-badge">[{formatVersion(count)}]</span>
                                     {/if}
                                 </span>
-                                <span class="item-cost">{formatNumber(project.locCost)} LoC</span>
+                                <span class="item-cost">{formatNumber(getProjectLocCost(project, count))} LoC</span>
                                 <span class="item-reward">
                                     → ${formatMoney(getEffectiveReward(project.reward))}
                                     {#if project.cred > 0} + {getEffectiveCred(project.cred).toFixed(0)} Cred{/if}
