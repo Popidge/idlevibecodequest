@@ -1,4 +1,4 @@
-# ✨ Vibe Code Guru
+# ✨ Idle Vibe Code Quest
 
 > A degenerate idle clicker game about vibe coding your way to $1B market cap 🚀
 
@@ -6,7 +6,7 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 
 **Your mission:** Ship projects, earn cred, upgrade your vibe, and become the ultimate prompt engineer.
 
-![Vibe Code Guru Screenshot](vgc_screenshot.png)
+![Screenshot](vgc_screenshot.png)
 
 ---
 
@@ -34,7 +34,7 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/vibe-code-guru.git
+git clone https://github.com/popidge/vibecodeguru.git
 cd vibe-code-guru
 
 # Install dependencies
