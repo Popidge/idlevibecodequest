@@ -3,7 +3,7 @@
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">┌─ VIBE CODE GURU v0.3 ─┐</div>
+    <div class="panel-header">┌─ idle-vibe-code v0.3 ─┐</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗
