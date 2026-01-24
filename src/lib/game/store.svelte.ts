@@ -286,8 +286,11 @@ class GameStore {
     get prestigePointsToEarn() {
         // Formula: floor(log10(total cash + 1))
         const cash = this.gameState.prestige?.totalCashEarnedThisRun ?? this.gameState.resources.money;
-        const points = Math.floor(Math.log10(cash + 1));
-        return Math.max(points, PRESTIGE.MIN_POINTS);
+        const rawPoints = Math.floor(Math.log10(cash + 1));
+        const basePoints = Math.max(rawPoints, PRESTIGE.MIN_POINTS);
+        
+        // Apply tech tree multiplier
+        return Math.floor(basePoints * this.effectivePrestigePointMultiplier);
     }
     get effectiveStartingCash() {
         return this.gameState.prestige?.bonuses.startingCash ?? 0;
@@ -771,8 +774,8 @@ class GameStore {
         this.gameState.techDebt = 0;
         this.gameState.projectsShipped = 0;
 
-        // Apply starting cash bonus
-        this.gameState.resources.money = startingCash;
+        // Apply starting cash bonus (prestige + tech tree accumulated bonuses)
+        this.gameState.resources.money = this.effectiveStartingCashWithTechTree;
 
         // Update prestige state
         if (!this.gameState.prestige) {
@@ -932,6 +935,10 @@ class GameStore {
         switch (node.effect) {
             case 'startingCash':
                 bonuses.totalStartingCash += node.effectValue;
+                // Apply immediately to current resources if in a run
+                if (this.gameState.prestige) {
+                    this.gameState.resources.money += node.effectValue;
+                }
                 break;
             case 'cashMultiplier':
                 bonuses.totalCashMultiplier += node.effectValue;
@@ -1006,11 +1013,21 @@ class GameStore {
         const basePenalty = Math.pow(1 - this.gameState.techDebt, 2);
         const mitigation = this.gameState.prestige?.bonuses.debtPenaltyMitigation ?? 0;
 
-        // Legacy Whisperer and Code Zen: at high debt, penalty becomes bonus
-        if (this.gameState.techDebt > 0.3 && mitigation > 0.3) {
-            // Convert penalty to small bonus at high debt levels
-            const bonusAtHighDebt = (this.gameState.techDebt - 0.3) * mitigation * 0.5;
-            return Math.max(0.1, basePenalty - bonusAtHighDebt);
+        // Check if Legacy Whisperer is purchased (learning tree node index 8)
+        const hasLegacyWhisperer = this.getPurchasedNodes('learning').includes(8);
+        
+        // Check if Code Zen is purchased (learning tree node index 9)
+        const hasCodeZen = this.getPurchasedNodes('learning').includes(9);
+
+        // Legacy Whisperer: Prevents all tech debt penalty (full income at any debt)
+        if (hasLegacyWhisperer) {
+            return 1.0;
+        }
+
+        // Code Zen: Takes reciprocal of penalty multiplier (turns penalty into bonus)
+        if (hasCodeZen) {
+            // If mitigation is 0.5, effective multiplier becomes 2.0
+            return 1 / (1 - Math.min(mitigation, 0.99));
         }
 
         // Normal mitigation reduces the penalty

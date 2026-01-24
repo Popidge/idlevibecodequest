@@ -34,11 +34,11 @@
             case 'cashMultiplier':
             case 'locMultiplier':
             case 'credMultiplier':
-            case 'debtAccumulationReduction':
-            case 'debtPenaltyMitigation':
-                return `+${(value * 100).toFixed(0)}%`;
             case 'prestigePointMultiplier':
                 return `+${(value * 100).toFixed(0)}%`;
+            case 'debtAccumulationReduction':
+            case 'debtPenaltyMitigation':
+                return `-${(value * 100).toFixed(0)}%`;
             case 'debtClearingMultiplier':
                 return `${value}×`;
             case 'autoPurchaseThreshold':
