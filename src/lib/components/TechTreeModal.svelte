@@ -31,32 +31,56 @@
     function formatModifierValue(modifiers: Partial<SystemModifiers> | undefined): string {
         if (!modifiers) return '';
 
-        // Check for special flags first
+        const parts: string[] = [];
+
+        // Check for special flags first (these are always shown alone if present)
         if (modifiers.unlockLegacyWhisperer) return 'Legacy Whisperer';
         if (modifiers.unlockCodeZen) return 'Code Zen';
 
-        // Check for flat bonuses
-        if (modifiers.startingCashFlat) return `+$${formatNumber(modifiers.startingCashFlat)}`;
+        // Flat LoC values - show absolute LoC
+        if (modifiers.locPerClickFlat) {
+            parts.push(`+${formatNumber(modifiers.locPerClickFlat)} LoC/click`);
+        }
+        if (modifiers.passiveLocRateFlat) {
+            parts.push(`+${formatNumber(modifiers.passiveLocRateFlat)} LoC/s passive`);
+        }
 
-        // Check for multipliers
-        if (modifiers.moneyMultiplier) return `+${(modifiers.moneyMultiplier * 100).toFixed(0)}% Cash`;
-        if (modifiers.locMultiplier) return `+${(modifiers.locMultiplier * 100).toFixed(0)}% LoC`;
-        if (modifiers.credMultiplier) return `+${(modifiers.credMultiplier * 100).toFixed(0)}% Cred`;
-        if (modifiers.prestigePointMultiplier) return `+${(modifiers.prestigePointMultiplier * 100).toFixed(0)}% PP`;
+        // Multipliers - format as percentages
+        if (modifiers.moneyMultiplier) {
+            parts.push(`+${(modifiers.moneyMultiplier * 100).toFixed(0)}% Cash`);
+        }
+        if (modifiers.locMultiplier) {
+            parts.push(`+${(modifiers.locMultiplier * 100).toFixed(0)}% LoC`);
+        }
+        if (modifiers.credMultiplier) {
+            parts.push(`+${(modifiers.credMultiplier * 100).toFixed(0)}% Cred`);
+        }
+        if (modifiers.prestigePointMultiplier) {
+            parts.push(`+${(modifiers.prestigePointMultiplier * 100).toFixed(0)}% PP`);
+        }
 
-        // Check for flat bonuses (multipliers expressed as flat additions to base)
-        if (modifiers.locPerClickFlat) return `+${(modifiers.locPerClickFlat * 100).toFixed(0)}% LoC/click`;
-        if (modifiers.passiveLocRateFlat) return `+${(modifiers.passiveLocRateFlat * 100).toFixed(0)}% passive LoC`;
+        // Starting cash
+        if (modifiers.startingCashFlat) {
+            parts.push(`+$${formatNumber(modifiers.startingCashFlat)}`);
+        }
 
-        // Check for debt mechanics
-        if (modifiers.debtAccumulationReduction) return `-${(modifiers.debtAccumulationReduction * 100).toFixed(0)}% debt`;
-        if (modifiers.debtPenaltyReduction) return `-${(modifiers.debtPenaltyReduction * 100).toFixed(0)}% penalty`;
-        if (modifiers.debtClearingEfficiency) return `${modifiers.debtClearingEfficiency}× clearing`;
+        // Debt mechanics
+        if (modifiers.debtAccumulationReduction) {
+            parts.push(`-${(modifiers.debtAccumulationReduction * 100).toFixed(0)}% debt`);
+        }
+        if (modifiers.debtPenaltyReduction) {
+            parts.push(`-${(modifiers.debtPenaltyReduction * 100).toFixed(0)}% penalty`);
+        }
+        if (modifiers.debtClearingEfficiency && modifiers.debtClearingEfficiency !== 1) {
+            parts.push(`${modifiers.debtClearingEfficiency}× clearing`);
+        }
 
-        // Check for cred threshold reduction
-        if (modifiers.credThresholdReduction) return `${modifiers.credThresholdReduction} cred earlier`;
+        // Cred threshold reduction
+        if (modifiers.credThresholdReduction) {
+            parts.push(`${modifiers.credThresholdReduction} cred earlier`);
+        }
 
-        return '';
+        return parts.join(', ');
     }
 </script>
 
