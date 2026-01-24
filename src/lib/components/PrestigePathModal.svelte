@@ -67,9 +67,9 @@
                 <div class="paths-container">
                     {#each paths as path}
                         {@const points = store.prestigePointsToEarn}
-                        {@const currentTotal = store.gameState.prestige?.bonuses ?? { startingCash: 0, cashMultiplier: 0, locMultiplier: 0, credMultiplier: 0 }}
+                        {@const mods = store.activeModifiers}
                         
-                        <button 
+                        <button
                             class="path-card"
                             style="--path-color: {path.color}"
                             onclick={() => handleSelectPath(path.id)}
@@ -90,11 +90,11 @@
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Starting:</span>
-                                        <span class="bonus-value">${formatNumber(currentTotal.startingCash + (points * 5000))}</span>
+                                        <span class="bonus-value">${formatNumber(mods.startingCashFlat + (points * 5000))}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Cash Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(currentTotal.cashMultiplier + (points * 0.20))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.moneyMultiplier + (points * 0.20))}</span>
                                     </div>
                                 {:else if path.id === 'nirvana'}
                                     <div class="bonus-row">
@@ -103,7 +103,7 @@
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total LoC Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(currentTotal.locMultiplier + (points * 0.15))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.locMultiplier + (points * 0.15))}</span>
                                     </div>
                                 {:else if path.id === 'linus'}
                                     <div class="bonus-row">
@@ -112,7 +112,7 @@
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Cred Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(currentTotal.credMultiplier + (points * 0.25))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.credMultiplier + (points * 0.25))}</span>
                                     </div>
                                 {:else}
                                     <div class="bonus-row">
@@ -125,7 +125,7 @@
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Penalty Reduction:</span>
-                                        <span class="bonus-value">-{formatMultiplier(points * DEBT_PENALTY_REDUCTION)}</span>
+                                        <span class="bonus-value">-{formatMultiplier(mods.debtPenaltyReduction + (points * DEBT_PENALTY_REDUCTION))}</span>
                                     </div>
                                 {/if}
                             </div>

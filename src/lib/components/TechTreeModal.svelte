@@ -1,7 +1,7 @@
 <script lang="ts">
     import { store, formatNumber } from '$lib/game/store.svelte';
     import { TECH_TREES } from '$lib/game/constants';
-    import type { TechTreePath } from '$lib/game/types';
+    import type { TechTreePath, TechTreeNode, SystemModifiers } from '$lib/game/types';
 
     const trees = [
         { id: 'buyout' as TechTreePath, ...TECH_TREES.buyout },
@@ -27,32 +27,60 @@
         store.purchaseTechTreeNode(path, nodeIndex);
     }
 
-    function formatEffectValue(effect: string, value: number): string {
-        switch (effect) {
-            case 'startingCash':
-                return `+$${formatNumber(value)}`;
-            case 'cashMultiplier':
-            case 'locMultiplier':
-            case 'credMultiplier':
-            case 'prestigePointMultiplier':
-                return `+${(value * 100).toFixed(0)}%`;
-            case 'debtAccumulationReduction':
-            case 'debtPenaltyMitigation':
-                return `-${(value * 100).toFixed(0)}%`;
-            case 'debtClearingMultiplier':
-                return `${value}×`;
-            case 'autoPurchaseThreshold':
-                return `${(value * 100).toFixed(0)}% of LoC`;
-            case 'locPerClick':
-                return `+${(value * 100).toFixed(0)}%`;
-            case 'passiveLocRate':
-                return `+${(value * 100).toFixed(0)}%`;
-            case 'credThresholdReduction':
-                return `${value} cred earlier`;
-            default:
-                console.warn(`Unknown effect type: ${effect}`);
-                return `${value}`;
+    // Format modifier value for display
+    function formatModifierValue(modifiers: Partial<SystemModifiers> | undefined): string {
+        if (!modifiers) return '';
+
+        const parts: string[] = [];
+
+        // Check for special flags first (these are always shown alone if present)
+        if (modifiers.unlockLegacyWhisperer) return 'Legacy Whisperer';
+        if (modifiers.unlockCodeZen) return 'Code Zen';
+
+        // Flat LoC values - show absolute LoC
+        if (modifiers.locPerClickFlat) {
+            parts.push(`+${formatNumber(modifiers.locPerClickFlat)} LoC/click`);
         }
+        if (modifiers.passiveLocRateFlat) {
+            parts.push(`+${formatNumber(modifiers.passiveLocRateFlat)} LoC/s passive`);
+        }
+
+        // Multipliers - format as percentages
+        if (modifiers.moneyMultiplier) {
+            parts.push(`+${(modifiers.moneyMultiplier * 100).toFixed(0)}% Cash`);
+        }
+        if (modifiers.locMultiplier) {
+            parts.push(`+${(modifiers.locMultiplier * 100).toFixed(0)}% LoC`);
+        }
+        if (modifiers.credMultiplier) {
+            parts.push(`+${(modifiers.credMultiplier * 100).toFixed(0)}% Cred`);
+        }
+        if (modifiers.prestigePointMultiplier) {
+            parts.push(`+${(modifiers.prestigePointMultiplier * 100).toFixed(0)}% PP`);
+        }
+
+        // Starting cash
+        if (modifiers.startingCashFlat) {
+            parts.push(`+$${formatNumber(modifiers.startingCashFlat)}`);
+        }
+
+        // Debt mechanics
+        if (modifiers.debtAccumulationReduction) {
+            parts.push(`-${(modifiers.debtAccumulationReduction * 100).toFixed(0)}% debt`);
+        }
+        if (modifiers.debtPenaltyReduction) {
+            parts.push(`-${(modifiers.debtPenaltyReduction * 100).toFixed(0)}% penalty`);
+        }
+        if (modifiers.debtClearingEfficiency && modifiers.debtClearingEfficiency !== 1) {
+            parts.push(`${modifiers.debtClearingEfficiency}× clearing`);
+        }
+
+        // Cred threshold reduction
+        if (modifiers.credThresholdReduction) {
+            parts.push(`${modifiers.credThresholdReduction} cred earlier`);
+        }
+
+        return parts.join(', ');
     }
 </script>
 
@@ -118,7 +146,7 @@
                                             <div class="node-name">{node.name}</div>
                                             <div class="node-description">{node.description}</div>
                                             <div class="node-effect">
-                                                {formatEffectValue(node.effect, node.effectValue)}
+                                                {formatModifierValue(node.modifiers)}
                                             </div>
                                         </button>
                                     </div>

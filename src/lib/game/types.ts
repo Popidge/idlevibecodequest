@@ -83,7 +83,7 @@ export interface PrestigeState {
     pathHistory: PrestigePath[];
     runStartTime: number;
     totalCashEarnedThisRun: number;
-    bonuses: PrestigeBonuses;
+    bonuses?: PrestigeBonuses; // Optional - deprecated, now calculated from techTrees
     // Phase 4: Tech tree purchases
     techTrees: {
         buyout: number[];      // Array of purchased node indices (0-9)
@@ -104,28 +104,38 @@ export interface PrestigeSummary {
 // Phase 4: Tech Tree System
 export type TechTreePath = 'buyout' | 'nirvana' | 'linus' | 'learning';
 
+// System Modifiers - Single Source of Truth for all economy calculations
+// Final = (Base + Flat) * (1 + Sum(Multipliers))
+export interface SystemModifiers {
+    // Multipliers (Additive)
+    moneyMultiplier: number;        // e.g., 0.5 = +50%
+    locMultiplier: number;          // e.g., 0.5 = +50%
+    credMultiplier: number;         // e.g., 0.5 = +50%
+    prestigePointMultiplier: number; // e.g., 0.5 = +50%
+
+    // Flat Bonuses
+    startingCashFlat: number;       // Flat cash bonus on prestige
+    locPerClickFlat: number;        // Flat LoC per click (additive with base)
+    passiveLocRateFlat: number;     // Flat LoC/sec bonus (additive with base)
+    credThresholdReduction: number; // Cred requirement reduction
+
+    // Debt Mechanics
+    debtAccumulationReduction: number; // e.g., 0.1 = -10% accumulation
+    debtPenaltyReduction: number;      // e.g., 0.1 = -10% penalty
+    debtClearingEfficiency: number;    // e.g., 2.0 = 2x efficiency
+
+    // Special Flags (for boolean logic)
+    unlockLegacyWhisperer: boolean; // Debt penalty becomes bonus at high levels
+    unlockCodeZen: boolean;         // Complete mastery over tech debt
+}
+
 export interface TechTreeNode {
     id: string;
     name: string;
     description: string;
     cost: number;
-    effect: TechTreeEffect;
-    effectValue: number;
+    modifiers: Partial<SystemModifiers>;
 }
-
-export type TechTreeEffect = 
-    | 'startingCash'
-    | 'cashMultiplier'
-    | 'locMultiplier'
-    | 'credMultiplier'
-    | 'debtAccumulationReduction'
-    | 'debtPenaltyMitigation'
-    | 'debtClearingMultiplier'
-    | 'credThresholdReduction'
-    | 'prestigePointMultiplier'
-    | 'verticalIntegration'
-    | 'locPerClick'
-    | 'passiveLocRate';
 
 export interface TechTree {
     path: TechTreePath;
