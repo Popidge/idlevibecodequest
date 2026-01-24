@@ -80,13 +80,12 @@ export function getRequiredCredForProject(projectId: string): number {
 }
 
 /**
- * Determine the credential requirement for a given upgrade type and level.
+ * Determine the credential requirement for a given upgrade level.
  *
- * @param type - The upgrade category (`'vibeCode'` or `'delegation'`)
  * @param level - The target upgrade level to evaluate
  * @returns The minimum credential required to unlock the specified upgrade level, or `999` if no matching unlock is defined
  */
-export function getRequiredCredForUpgrade(type: 'vibeCode' | 'delegation', level: number): number {
+export function getRequiredCredForUpgrade(level: number): number {
     for (const unlock of UNLOCKS.upgrades) {
         if (level <= unlock.maxLevel) {
             return unlock.cred;

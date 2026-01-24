@@ -2,7 +2,7 @@
 
 import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, type Upgrade, type Project } from './constants';
 import type { GameState, FloatText, Notification, OfflineGains, Hint, PrestigePath, PrestigeSummary } from './types';
-import { getMaxUpgradeLevel, getUnlockedProjects } from './utils';
+import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
 
 // Default game state
 const defaultState: GameState = {
@@ -778,11 +778,6 @@ export function formatNumber(num: number): string {
         return (num / 1000).toFixed(1) + 'K';
     }
     return Math.floor(num).toString();
-}
-
-export function getUpgradeCost(upgrade: Upgrade, count: number): number {
-    const costMultiplier = Math.pow(1.15, count);
-    return Math.floor(upgrade.cost * costMultiplier);
 }
 
 export function getProjectLocCost(project: Project, count: number): number {
