@@ -198,16 +198,16 @@ class GameStore {
 
     get effectivePassiveIncome() {
         // $/sec: base × tech debt penalty × prestige cash multiplier
-        return this.basePassiveIncome * this.debtPenaltyFactor * this.effectiveCashMultiplier;
+        return this.basePassiveIncome * this.effectiveDebtPenaltyFactor * this.effectiveCashMultiplier;
     }
     
     // Helper methods for project rewards with ALL modifiers
     getEffectiveProjectReward(baseReward: number): number {
-        return baseReward * this.debtPenaltyFactor * this.effectiveCashMultiplier;
+        return baseReward * this.effectiveDebtPenaltyFactor * this.effectiveCashMultiplier;
     }
     
     getEffectiveProjectCred(baseCred: number): number {
-        return Math.floor(baseCred * this.debtPenaltyFactor * this.effectiveCredMultiplier);
+        return Math.floor(baseCred * this.effectiveDebtPenaltyFactor * this.effectiveCredMultiplier);
     }
 
     get unlockedProjects() {
@@ -523,6 +523,14 @@ class GameStore {
                 this.gameState.resources = { ...defaultState.resources, ...parsed.resources };
                 this.gameState.upgrades = { ...defaultState.upgrades, ...parsed.upgrades };
                 this.gameState.projects = { ...defaultState.projects, ...parsed.projects };
+                
+                // Backfill prestige nested objects for saves that predate Phase 4
+                const defaultPrestige = defaultState.prestige;
+                if (this.gameState.prestige && parsed.prestige && defaultPrestige) {
+                    this.gameState.prestige.bonuses = { ...defaultPrestige.bonuses, ...parsed.prestige.bonuses };
+                    this.gameState.prestige.techTrees = { ...defaultPrestige.techTrees, ...parsed.prestige.techTrees };
+                }
+                
                 if (!this.gameState.activeTab) {
                     this.gameState.activeTab = { projects: 'standard', upgrades: 'vibeCode' };
                 }
@@ -750,6 +758,11 @@ class GameStore {
             learning: []
         };
 
+        // Apply learning path debt relief BEFORE resetting techDebt
+        if (path === 'learning' && debtRelief > 0) {
+            this.gameState.techDebt = Math.max(0, this.gameState.techDebt - debtRelief);
+        }
+
         // Reset game state (preserve prestige data)
         this.gameState.resources = { money: 0, loc: 0, cred: 0 };
         this.gameState.upgrades = { vibeCode: {}, delegation: {} };
@@ -760,11 +773,6 @@ class GameStore {
 
         // Apply starting cash bonus
         this.gameState.resources.money = startingCash;
-
-        // Apply learning path debt relief
-        if (path === 'learning' && debtRelief > 0) {
-            this.gameState.techDebt = Math.max(0, this.gameState.techDebt - debtRelief);
-        }
 
         // Update prestige state
         if (!this.gameState.prestige) {
@@ -1012,30 +1020,6 @@ class GameStore {
     // Effective debt clearing efficiency
     get effectiveDebtClearingEfficiency() {
         return this.gameState.prestige?.bonuses.debtClearingMultiplier ?? 1;
-    }
-
-    // Effective cash multiplier (prestige + tech tree)
-    get effectiveCashMultiplierWithTechTree() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
-        const techTreeBonus = this.gameState.prestige?.bonuses.totalCashMultiplier ?? 0;
-        return base + prestigeBonus + techTreeBonus;
-    }
-
-    // Effective LoC multiplier (prestige + tech tree)
-    get effectiveLocMultiplierWithTechTree() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
-        const techTreeBonus = this.gameState.prestige?.bonuses.totalLocMultiplier ?? 0;
-        return base + prestigeBonus + techTreeBonus;
-    }
-
-    // Effective Cred multiplier (prestige + tech tree)
-    get effectiveCredMultiplierWithTechTree() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
-        const techTreeBonus = this.gameState.prestige?.bonuses.totalCredMultiplier ?? 0;
-        return base + prestigeBonus + techTreeBonus;
     }
 
     // Effective starting cash (prestige + tech tree)

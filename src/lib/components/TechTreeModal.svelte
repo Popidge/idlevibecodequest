@@ -10,6 +10,9 @@
         { id: 'learning' as TechTreePath, ...TECH_TREES.learning }
     ];
 
+    // Get the active tree based on the current tab
+    let activeTree = $derived(trees.find(t => t.id === store.activeTechTreeTab));
+
     function handleClose() {
         store.closeTechTree();
     }
@@ -47,7 +50,8 @@
             case 'credThresholdReduction':
                 return `${value} cred earlier`;
             default:
-                return '';
+                console.warn(`Unknown effect type: ${effect}`);
+                return `${value}`;
         }
     }
 </script>
@@ -80,17 +84,15 @@
                 </div>
 
                 <div class="tree-content">
-                    {#if true}
-                        {@const tree = trees.find(t => t.id === store.activeTechTreeTab)}
-                        {#if tree}
-                            <div class="tree-description">{tree.description}</div>
+                    {#if activeTree}
+                            <div class="tree-description">{activeTree.description}</div>
 
                             <div class="nodes-container">
-                                {#each tree.nodes as node, index}
-                                    {@const isPurchased = store.getPurchasedNodes(tree.id).includes(index)}
-                                    {@const canPurchase = store.canPurchaseNode(tree.id, index)}
+                                {#each activeTree.nodes as node, index}
+                                    {@const isPurchased = store.getPurchasedNodes(activeTree.id).includes(index)}
+                                    {@const canPurchase = store.canPurchaseNode(activeTree.id, index)}
                                     {@const isLocked = !isPurchased && !canPurchase}
-                                    {@const previousPurchased = index === 0 || store.getPurchasedNodes(tree.id).includes(index - 1)}
+                                    {@const previousPurchased = index === 0 || store.getPurchasedNodes(activeTree.id).includes(index - 1)}
 
                                     <div class="node-wrapper">
                                         {#if index > 0}
@@ -101,8 +103,8 @@
                                             class:purchased={isPurchased}
                                             class:available={canPurchase && !isPurchased}
                                             class:locked={isLocked}
-                                            style="--node-color: {tree.color}"
-                                            onclick={() => handlePurchase(tree.id, index)}
+                                            style="--node-color: {activeTree.color}"
+                                            onclick={() => handlePurchase(activeTree.id, index)}
                                             disabled={isLocked || isPurchased}
                                         >
                                             <div class="node-status">
@@ -124,7 +126,6 @@
                                 {/each}
                             </div>
                         {/if}
-                    {/if}
                 </div>
             </div>
             <div class="modal-footer">

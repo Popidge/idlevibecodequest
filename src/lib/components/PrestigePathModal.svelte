@@ -1,6 +1,9 @@
 <script lang="ts">
     import { store, formatNumber } from '$lib/game/store.svelte';
     import type { PrestigePath } from '$lib/game/types';
+    import { PRESTIGE } from '$lib/game/constants';
+    
+    const { DEBT_RELIEF_PER_POINT, DEBT_ACCUMULATION_REDUCTION, DEBT_PENALTY_REDUCTION } = PRESTIGE;
     
     const paths = [
         {
@@ -114,15 +117,15 @@
                                 {:else}
                                     <div class="bonus-row">
                                         <span class="bonus-label">Debt Relief:</span>
-                                        <span class="bonus-value">-{(points * 0.02 * 100).toFixed(0)}%</span>
+                                        <span class="bonus-value">-{(points * DEBT_RELIEF_PER_POINT * 100).toFixed(0)}%</span>
                                     </div>
                                     <div class="bonus-row">
                                         <span class="bonus-label">Debt Reduction:</span>
-                                        <span class="bonus-value">-{formatMultiplier(points * 0.05)}</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * DEBT_ACCUMULATION_REDUCTION)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Penalty Reduction:</span>
-                                        <span class="bonus-value">-{formatMultiplier(points * 0.05)}</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * DEBT_PENALTY_REDUCTION)}</span>
                                     </div>
                                 {/if}
                             </div>
@@ -189,7 +192,7 @@
     
     .paths-container {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 12px;
         margin-bottom: 20px;
     }
