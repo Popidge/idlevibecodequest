@@ -1,7 +1,7 @@
 <script lang="ts">
     import { UPGRADES } from '$lib/game/constants';
-    import { store, getUpgradeCost, formatNumber } from '$lib/game/store.svelte';
-    import { getRequiredCredForUpgrade } from '$lib/game/utils';
+    import { store, formatNumber } from '$lib/game/store.svelte';
+    import { getUpgradeCost, getRequiredCredForUpgrade } from '$lib/game/utils';
 
     type UpgradeType = 'vibeCode' | 'delegation';
     const upgradeTypes: { key: UpgradeType; label: string }[] = [
@@ -13,11 +13,11 @@
         store.switchTab('upgrades', type);
     }
     
-    // Get click power reactively
-    let clickPower = $state(store.clickPower);
+    // Get effective click power reactively
+    let clickPower = $state(store.effectiveClickPower);
     
     $effect(() => {
-        clickPower = store.clickPower;
+        clickPower = store.effectiveClickPower;
     });
 </script>
 
@@ -56,7 +56,7 @@
                         >
                             {#if !isUnlocked}
                                 <span class="item-name">🔒 {upgrade.name}</span>
-                                <span class="item-locked-text">Need {getRequiredCredForUpgrade(type.key, upgrade.level)} Cred</span>
+                                <span class="item-locked-text">Need {getRequiredCredForUpgrade(upgrade.level)} Cred</span>
                             {:else}
                                 <span class="item-name">
                                     {upgrade.name}

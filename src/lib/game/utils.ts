@@ -2,6 +2,15 @@
 
 import type { Upgrade } from './constants';
 
+// Import UNLOCKS from constants for reference
+import { UNLOCKS } from './constants';
+
+/**
+ * Produces a compact string representation of a number using 'K' for thousands and 'M' for millions.
+ *
+ * @param num - The numeric value to format.
+ * @returns A string with two decimal places and 'M' if `num` >= 1,000,000; with one decimal place and 'K' if `num` >= 1,000; otherwise the integer part as a string.
+ */
 export function formatNumber(num: number): string {
     if (num >= 1000000) {
         return (num / 1000000).toFixed(2) + 'M';
@@ -11,22 +20,27 @@ export function formatNumber(num: number): string {
     return Math.floor(num).toString();
 }
 
+/**
+ * Compute the cost for the next upgrade level based on the upgrade's base cost and how many have already been purchased.
+ *
+ * @param upgrade - The upgrade definition whose base `cost` is used as the starting value
+ * @param count - The number of times this upgrade has already been purchased
+ * @returns The calculated cost for the next upgrade level, rounded down to an integer
+ */
 export function getUpgradeCost(upgrade: Upgrade, count: number): number {
     const costMultiplier = Math.pow(1.15, count);
     return Math.floor(upgrade.cost * costMultiplier);
 }
 
+/**
+ * Determine the highest upgrade level available for the given credential amount.
+ *
+ * @param cred - The credential value used to check unlock thresholds
+ * @returns The highest unlocked upgrade level for `cred`, or `0` if none are unlocked
+ */
 export function getMaxUpgradeLevel(cred: number): number {
-    const UNLOCKS_UPGRADES = [
-        { cred: 0, maxLevel: 3 },
-        { cred: 50, maxLevel: 5 },
-        { cred: 150, maxLevel: 7 },
-        { cred: 400, maxLevel: 9 },
-        { cred: 800, maxLevel: 10 }
-    ];
-    
     let maxLevel = 0;
-    for (const unlock of UNLOCKS_UPGRADES) {
+    for (const unlock of UNLOCKS.upgrades) {
         if (cred >= unlock.cred) {
             maxLevel = unlock.maxLevel;
         }
@@ -34,22 +48,15 @@ export function getMaxUpgradeLevel(cred: number): number {
     return maxLevel;
 }
 
+/**
+ * List project IDs unlocked at the specified credential level.
+ *
+ * @param cred - The credential value used to evaluate unlock thresholds
+ * @returns An array of unique project IDs unlocked for the given `cred`
+ */
 export function getUnlockedProjects(cred: number): string[] {
-    const UNLOCKS_PROJECTS = [
-        { cred: 0, unlocks: ['todo-app', 'calculator', 'cli-tool'] },
-        { cred: 10, unlocks: ['weather-app', 'mini-crm', 'library'] },
-        { cred: 30, unlocks: ['portfolio', 'task-manager', 'framework'] },
-        { cred: 50, unlocks: ['contact-form', 'analytics-tool', 'plugin-system'] },
-        { cred: 80, unlocks: ['blog-engine', 'invoice-gen', 'theme-pack'] },
-        { cred: 120, unlocks: ['wiki-clone', 'appointment-booker', 'codegen'] },
-        { cred: 180, unlocks: ['bookmark-manager', 'survey-platform', 'linter'] },
-        { cred: 250, unlocks: ['recipe-tracker', 'ab-testing', 'test-framework'] },
-        { cred: 350, unlocks: ['habit-tracker', 'user-feedback', 'docs-site'] },
-        { cred: 500, unlocks: ['feature-flags', 'api-gateway', 'package-manager'] }
-    ];
-    
     let unlocked: string[] = [];
-    for (const unlock of UNLOCKS_PROJECTS) {
+    for (const unlock of UNLOCKS.projects) {
         if (cred >= unlock.cred) {
             unlocked = unlocked.concat(unlock.unlocks);
         }
@@ -57,38 +64,29 @@ export function getUnlockedProjects(cred: number): string[] {
     return [...new Set(unlocked)];
 }
 
+/**
+ * Lookup the credential threshold required to unlock a project.
+ *
+ * @param projectId - The identifier of the project to query
+ * @returns The minimum credential value required to unlock `projectId`, or `0` if the project is not listed
+ */
 export function getRequiredCredForProject(projectId: string): number {
-    const UNLOCKS_PROJECTS = [
-        { cred: 0, unlocks: ['todo-app', 'calculator', 'cli-tool'] },
-        { cred: 10, unlocks: ['weather-app', 'mini-crm', 'library'] },
-        { cred: 30, unlocks: ['portfolio', 'task-manager', 'framework'] },
-        { cred: 50, unlocks: ['contact-form', 'analytics-tool', 'plugin-system'] },
-        { cred: 80, unlocks: ['blog-engine', 'invoice-gen', 'theme-pack'] },
-        { cred: 120, unlocks: ['wiki-clone', 'appointment-booker', 'codegen'] },
-        { cred: 180, unlocks: ['bookmark-manager', 'survey-platform', 'linter'] },
-        { cred: 250, unlocks: ['recipe-tracker', 'ab-testing', 'test-framework'] },
-        { cred: 350, unlocks: ['habit-tracker', 'user-feedback', 'docs-site'] },
-        { cred: 500, unlocks: ['feature-flags', 'api-gateway', 'package-manager'] }
-    ];
-    
-    for (const unlock of UNLOCKS_PROJECTS) {
-        if (unlock.unlocks.includes(projectId)) {
+    for (const unlock of UNLOCKS.projects) {
+        if ((unlock.unlocks as readonly string[]).includes(projectId)) {
             return unlock.cred;
         }
     }
     return 0;
 }
 
-export function getRequiredCredForUpgrade(type: 'vibeCode' | 'delegation', level: number): number {
-    const UNLOCKS_UPGRADES = [
-        { cred: 0, maxLevel: 3 },
-        { cred: 50, maxLevel: 5 },
-        { cred: 150, maxLevel: 7 },
-        { cred: 400, maxLevel: 9 },
-        { cred: 800, maxLevel: 10 }
-    ];
-    
-    for (const unlock of UNLOCKS_UPGRADES) {
+/**
+ * Determine the credential requirement for a given upgrade level.
+ *
+ * @param level - The target upgrade level to evaluate
+ * @returns The minimum credential required to unlock the specified upgrade level, or `999` if no matching unlock is defined
+ */
+export function getRequiredCredForUpgrade(level: number): number {
+    for (const unlock of UNLOCKS.upgrades) {
         if (level <= unlock.maxLevel) {
             return unlock.cred;
         }

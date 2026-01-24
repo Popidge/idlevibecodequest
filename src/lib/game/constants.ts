@@ -107,7 +107,6 @@ export const TECH_DEBT = {
     PER_PROJECT: 0.00001,                // Additional debt per project shipped
     DELEGATION_DEBT_RATE: 0.1,           // Delegation gains 0.1× single-click debt per second
     MAX_DEBT: 0.5,                       // 50% maximum debt
-    DEBT_PENALTY_SQUARED: true,          // Apply squared penalty: (1 - debt)²
     REDUCTION_BASE_LOC_COST: 200,        // Base LoC cost per 0.01 debt
     REDUCTION_LOC_MULTIPLIER: 4,         // LoC cost multiplier per project shipped
     REDUCTION_BASE_CASH_COST: 1000,      // Base Cash cost per 0.01 debt
