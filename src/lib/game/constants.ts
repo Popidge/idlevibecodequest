@@ -14,28 +14,28 @@ export const PROJECTS = {
         { id: 'habit-tracker', name: 'Habit Tracker', locCost: 5000, reward: 2500, cred: 0 }
     ],
     saas: [
-        { id: 'mini-crm', name: 'Mini CRM', locCost: 200, reward: 20, recurring: true, cred: 5 },
-        { id: 'task-manager', name: 'Task Manager', locCost: 500, reward: 50, recurring: true, cred: 10 },
-        { id: 'analytics-tool', name: 'Analytics Tool', locCost: 1000, reward: 100, recurring: true, cred: 20 },
-        { id: 'invoice-gen', name: 'Invoice Generator', locCost: 2000, reward: 150, recurring: true, cred: 30 },
-        { id: 'appointment-booker', name: 'Appointment Booker', locCost: 4000, reward: 250, recurring: true, cred: 50 },
-        { id: 'survey-platform', name: 'Survey Platform', locCost: 8000, reward: 400, recurring: true, cred: 80 },
-        { id: 'ab-testing', name: 'A/B Testing', locCost: 15000, reward: 600, recurring: true, cred: 120 },
-        { id: 'user-feedback', name: 'User Feedback', locCost: 30000, reward: 1000, recurring: true, cred: 200 },
-        { id: 'feature-flags', name: 'Feature Flags', locCost: 50000, reward: 1500, recurring: true, cred: 300 },
-        { id: 'api-gateway', name: 'API Gateway', locCost: 100000, reward: 2500, recurring: true, cred: 500 }
+        { id: 'mini-crm', name: 'Mini CRM', locCost: 200, reward: 5, recurring: true, cred: 1 },
+        { id: 'task-manager', name: 'Task Manager', locCost: 500, reward: 10, recurring: true, cred: 2 },
+        { id: 'analytics-tool', name: 'Analytics Tool', locCost: 1000, reward: 20, recurring: true, cred: 3 },
+        { id: 'invoice-gen', name: 'Invoice Generator', locCost: 2000, reward: 30, recurring: true, cred: 4 },
+        { id: 'appointment-booker', name: 'Appointment Booker', locCost: 4000, reward: 50, recurring: true, cred: 5 },
+        { id: 'survey-platform', name: 'Survey Platform', locCost: 8000, reward: 80, recurring: true, cred: 6 },
+        { id: 'ab-testing', name: 'A/B Testing', locCost: 15000, reward: 100, recurring: true, cred: 7 },
+        { id: 'user-feedback', name: 'User Feedback', locCost: 30000, reward: 200, recurring: true, cred: 8 },
+        { id: 'feature-flags', name: 'Feature Flags', locCost: 50000, reward: 350, recurring: true, cred: 9 },
+        { id: 'api-gateway', name: 'API Gateway', locCost: 100000, reward: 500, recurring: true, cred: 10 }
     ],
     openSource: [
-        { id: 'cli-tool', name: 'CLI Utility', locCost: 75, reward: 10, cred: 5 },
-        { id: 'library', name: 'Utils Library', locCost: 150, reward: 20, cred: 15 },
-        { id: 'framework', name: 'Mini Framework', locCost: 300, reward: 40, cred: 30 },
-        { id: 'plugin-system', name: 'Plugin System', locCost: 600, reward: 80, cred: 60 },
-        { id: 'theme-pack', name: 'Theme Pack', locCost: 1200, reward: 150, cred: 100 },
-        { id: 'codegen', name: 'Code Generator', locCost: 2500, reward: 300, cred: 180 },
-        { id: 'linter', name: 'Custom Linter', locCost: 5000, reward: 600, cred: 300 },
-        { id: 'test-framework', name: 'Test Framework', locCost: 10000, reward: 1200, cred: 500 },
-        { id: 'docs-site', name: 'Docs Generator', locCost: 20000, reward: 2500, cred: 800 },
-        { id: 'package-manager', name: 'Package Manager', locCost: 50000, reward: 5000, cred: 1500 }
+        { id: 'cli-tool', name: 'CLI Utility', locCost: 75, reward: 5, cred: 5 },
+        { id: 'library', name: 'Utils Library', locCost: 150, reward: 10, cred: 10 },
+        { id: 'framework', name: 'Mini Framework', locCost: 300, reward: 20, cred: 20 },
+        { id: 'plugin-system', name: 'Plugin System', locCost: 600, reward: 40, cred: 35 },
+        { id: 'theme-pack', name: 'Theme Pack', locCost: 1200, reward: 80, cred: 55 },
+        { id: 'codegen', name: 'Code Generator', locCost: 2500, reward: 160, cred: 80 },
+        { id: 'linter', name: 'Custom Linter', locCost: 5000, reward: 320, cred: 110 },
+        { id: 'test-framework', name: 'Test Framework', locCost: 10000, reward: 640, cred: 155 },
+        { id: 'docs-site', name: 'Docs Generator', locCost: 20000, reward: 1280, cred: 205 },
+        { id: 'package-manager', name: 'Package Manager', locCost: 50000, reward: 2560, cred: 260 }
     ]
 } as const;
 
@@ -138,6 +138,41 @@ export const PRESTIGE = {
 // Phase 4: Tech Tree Constants
 export const TECH_TREE_COSTS = [1, 3, 5, 10, 15, 20, 25, 30, 35, 40] as const;
 
+// Helper type for tech tree node modifiers (non-readonly for easier iteration)
+type TechTreeNodeModifiers = {
+    startingCashFlat?: number;
+    moneyMultiplier?: number;
+    locMultiplier?: number;
+    credMultiplier?: number;
+    prestigePointMultiplier?: number;
+    locPerClickFlat?: number;
+    passiveLocRateFlat?: number;
+    credThresholdReduction?: number;
+    debtAccumulationReduction?: number;
+    debtPenaltyReduction?: number;
+    debtClearingEfficiency?: number;
+    unlockLegacyWhisperer?: boolean;
+    unlockCodeZen?: boolean;
+};
+
+// Interface for tech tree nodes with non-readonly modifiers
+interface TechTreeNode {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    modifiers: TechTreeNodeModifiers;
+}
+
+interface TechTree {
+    path: 'buyout' | 'nirvana' | 'linus' | 'learning';
+    name: string;
+    icon: string;
+    color: string;
+    description: string;
+    nodes: TechTreeNode[];
+}
+
 export const TECH_TREES = {
     buyout: {
         path: 'buyout' as const,
@@ -146,17 +181,16 @@ export const TECH_TREES = {
         color: '#00ff00',
         description: 'Cash generation mastery',
         nodes: [
-            { id: 'seed_funding', name: 'Seed Funding', description: '+5,000 starting cash', cost: 1, effect: 'startingCash' as const, effectValue: 5000 },
-            { id: 'angel_investor', name: 'Angel Investor', description: '+15,000 starting cash', cost: 3, effect: 'startingCash' as const, effectValue: 15000 },
-            { id: 'series_a', name: 'Series A', description: '+30% cash multiplier', cost: 5, effect: 'cashMultiplier' as const, effectValue: 0.30 },
-            { id: 'acqui_hire', name: 'Acqui-hire', description: '+40% cash multiplier', cost: 10, effect: 'cashMultiplier' as const, effectValue: 0.40 },
-            { id: 'ipo', name: 'IPO', description: '+50% prestige point gain', cost: 15, effect: 'prestigePointMultiplier' as const, effectValue: 0.50 },
-            { id: 'venture_capital', name: 'Venture Capital', description: '+40% cash multiplier', cost: 20, effect: 'cashMultiplier' as const, effectValue: 0.40 },
-            { id: 'strategic_buyout', name: 'Strategic Buyout', description: '+$60,000 starting cash', cost: 25, effect: 'startingCash' as const, effectValue: 60000 },
-            { id: 'market_dominance', name: 'Market Dominance', description: '+50% cash multiplier', cost: 30, effect: 'cashMultiplier' as const, effectValue: 0.50 },
-            { id: 'unicorn_status', name: 'Unicorn Status', description: '+100% prestige point gain', cost: 35, effect: 'prestigePointMultiplier' as const, effectValue: 1.00 },
-            { id: 'tech_empire', name: 'Tech Empire', description: '+100% cash multiplier', cost: 40, effect: 'cashMultiplier' as const, effectValue: 1.00 },
-            { id: 'vertical_integration', name: 'Vertical Integration', description: 'Every second, automatically buy the cheapest upgrade', cost: 45, effect: 'verticalIntegration' as const, effectValue: 0 }
+            { id: 'seed_funding', name: 'Seed Funding', description: '+5,000 starting cash', cost: 1, modifiers: { startingCashFlat: 5000 } },
+            { id: 'angel_investor', name: 'Angel Investor', description: '+15,000 starting cash', cost: 3, modifiers: { startingCashFlat: 15000 } },
+            { id: 'series_a', name: 'Series A', description: '+30% cash multiplier', cost: 5, modifiers: { moneyMultiplier: 0.30 } },
+            { id: 'acqui_hire', name: 'Acqui-hire', description: '+40% cash multiplier', cost: 10, modifiers: { moneyMultiplier: 0.40 } },
+            { id: 'ipo', name: 'IPO', description: '+50% prestige point gain', cost: 15, modifiers: { prestigePointMultiplier: 0.50 } },
+            { id: 'venture_capital', name: 'Venture Capital', description: '+40% cash multiplier', cost: 20, modifiers: { moneyMultiplier: 0.40 } },
+            { id: 'strategic_buyout', name: 'Strategic Buyout', description: '+$60,000 starting cash', cost: 25, modifiers: { startingCashFlat: 60000 } },
+            { id: 'market_dominance', name: 'Market Dominance', description: '+50% cash multiplier', cost: 30, modifiers: { moneyMultiplier: 0.50 } },
+            { id: 'unicorn_status', name: 'Unicorn Status', description: '+100% prestige point gain', cost: 35, modifiers: { prestigePointMultiplier: 1.00 } },
+            { id: 'tech_empire', name: 'Tech Empire', description: '+100% cash multiplier', cost: 40, modifiers: { moneyMultiplier: 1.00 } }
         ]
     },
     nirvana: {
@@ -166,16 +200,16 @@ export const TECH_TREES = {
         color: '#00ccff',
         description: 'LoC generation mastery',
         nodes: [
-            { id: 'copilot_plus', name: 'Copilot+', description: '+10% LoC per click', cost: 1, effect: 'locPerClick' as const, effectValue: 0.10 },
-            { id: 'vibe_streak', name: 'Vibe Streak', description: '+20% LoC per click', cost: 3, effect: 'locPerClick' as const, effectValue: 0.20 },
-            { id: 'prompt_engineer', name: 'Prompt Engineer', description: '+30% LoC per click', cost: 5, effect: 'locPerClick' as const, effectValue: 0.30 },
-            { id: 'ai_whisperer', name: 'AI Whisperer', description: '+50% LoC per click', cost: 10, effect: 'locPerClick' as const, effectValue: 0.50 },
-            { id: 'agi_integration', name: 'Ralph Loops', description: '+100% LoC per click', cost: 15, effect: 'locPerClick' as const, effectValue: 1.00 },
-            { id: 'neural_enhancement', name: 'Neural Enhancement', description: '+25% passive LoC rate', cost: 20, effect: 'passiveLocRate' as const, effectValue: 0.25 },
-            { id: 'quantum_code', name: 'Quantum Code', description: '+50% LoC multiplier', cost: 25, effect: 'locMultiplier' as const, effectValue: 0.50 },
-            { id: 'digital_transcendence', name: 'Digital Transcendence', description: 'Increase LoC per click by 50%', cost: 30, effect: 'locPerClick' as const, effectValue: 0.50 },
-            { id: 'cosmic_computing', name: 'Cosmic Computing', description: '+100% passive LoC rate', cost: 35, effect: 'passiveLocRate' as const, effectValue: 1.00 },
-            { id: 'singularity', name: 'Singularity', description: '5x all LoC generation', cost: 40, effect: 'locMultiplier' as const, effectValue: 4.00 }
+            { id: 'copilot_plus', name: 'Copilot+', description: '+10% LoC per click', cost: 1, modifiers: { locPerClickFlat: 0.10 } },
+            { id: 'vibe_streak', name: 'Vibe Streak', description: '+20% LoC per click', cost: 3, modifiers: { locPerClickFlat: 0.20 } },
+            { id: 'prompt_engineer', name: 'Prompt Engineer', description: '+30% LoC per click', cost: 5, modifiers: { locPerClickFlat: 0.30 } },
+            { id: 'ai_whisperer', name: 'AI Whisperer', description: '+50% LoC per click', cost: 10, modifiers: { locPerClickFlat: 0.50 } },
+            { id: 'agi_integration', name: 'Ralph Loops', description: '+100% LoC per click', cost: 15, modifiers: { locPerClickFlat: 1.00 } },
+            { id: 'neural_enhancement', name: 'Neural Enhancement', description: '+25% passive LoC rate', cost: 20, modifiers: { passiveLocRateFlat: 0.25 } },
+            { id: 'quantum_code', name: 'Quantum Code', description: '+50% LoC multiplier', cost: 25, modifiers: { locMultiplier: 0.50 } },
+            { id: 'digital_transcendence', name: 'Digital Transcendence', description: '+50% LoC per click', cost: 30, modifiers: { locPerClickFlat: 0.50 } },
+            { id: 'cosmic_computing', name: 'Cosmic Computing', description: '+100% passive LoC rate', cost: 35, modifiers: { passiveLocRateFlat: 1.00 } },
+            { id: 'singularity', name: 'Singularity', description: '5x all LoC generation', cost: 40, modifiers: { locMultiplier: 4.00 } }
         ]
     },
     linus: {
@@ -185,16 +219,16 @@ export const TECH_TREES = {
         color: '#ffb000',
         description: 'Credibility mastery',
         nodes: [
-            { id: 'oss_contributor', name: 'OSS Contributor', description: '+20% cred gain', cost: 1, effect: 'credMultiplier' as const, effectValue: 0.20 },
-            { id: 'kernel_commit', name: 'Kernel Commit', description: '+30% cred gain', cost: 3, effect: 'credMultiplier' as const, effectValue: 0.30 },
-            { id: 'maintainer', name: 'Maintainer', description: '+50% cred gain', cost: 5, effect: 'credMultiplier' as const, effectValue: 0.50 },
-            { id: 'linus_blessing', name: 'Linus Blessing', description: '+100% cred gain', cost: 10, effect: 'credMultiplier' as const, effectValue: 1.00 },
-            { id: 'github_star', name: 'GitHub Star', description: 'Unlock all projects 10 cred earlier', cost: 15, effect: 'credThresholdReduction' as const, effectValue: 10 },
-            { id: 'project_maintainer', name: 'Project Maintainer', description: '+40% cred gain', cost: 20, effect: 'credMultiplier' as const, effectValue: 0.40 },
-            { id: 'open_source_legend', name: 'Open Source Legend', description: '+60% cred gain', cost: 25, effect: 'credMultiplier' as const, effectValue: 0.60 },
-            { id: 'code_celebrity', name: 'Code Celebrity', description: '+80% cred gain', cost: 30, effect: 'credMultiplier' as const, effectValue: 0.80 },
-            { id: 'industry_icon', name: 'Industry Icon', description: 'Unlock all projects 25 cred earlier', cost: 35, effect: 'credThresholdReduction' as const, effectValue: 25 },
-            { id: 'living_legend', name: 'Living Legend', description: '5x all cred generation', cost: 40, effect: 'credMultiplier' as const, effectValue: 4.00 }
+            { id: 'oss_contributor', name: 'OSS Contributor', description: '+20% cred gain', cost: 1, modifiers: { credMultiplier: 0.20 } },
+            { id: 'kernel_commit', name: 'Kernel Commit', description: '+30% cred gain', cost: 3, modifiers: { credMultiplier: 0.30 } },
+            { id: 'maintainer', name: 'Maintainer', description: '+50% cred gain', cost: 5, modifiers: { credMultiplier: 0.50 } },
+            { id: 'linus_blessing', name: 'Linus Blessing', description: '+100% cred gain', cost: 10, modifiers: { credMultiplier: 1.00 } },
+            { id: 'github_star', name: 'GitHub Star', description: 'Unlock all projects 10 cred earlier', cost: 15, modifiers: { credThresholdReduction: 10 } },
+            { id: 'project_maintainer', name: 'Project Maintainer', description: '+40% cred gain', cost: 20, modifiers: { credMultiplier: 0.40 } },
+            { id: 'open_source_legend', name: 'Open Source Legend', description: '+60% cred gain', cost: 25, modifiers: { credMultiplier: 0.60 } },
+            { id: 'code_celebrity', name: 'Code Celebrity', description: '+80% cred gain', cost: 30, modifiers: { credMultiplier: 0.80 } },
+            { id: 'industry_icon', name: 'Industry Icon', description: 'Unlock all projects 25 cred earlier', cost: 35, modifiers: { credThresholdReduction: 25 } },
+            { id: 'living_legend', name: 'Living Legend', description: '5x all cred generation', cost: 40, modifiers: { credMultiplier: 4.00 } }
         ]
     },
     learning: {
@@ -204,16 +238,16 @@ export const TECH_TREES = {
         color: '#ff00ff',
         description: 'Tech debt mastery',
         nodes: [
-            { id: 'read_the_docs', name: 'Read the Docs', description: '-5% debt accumulation', cost: 1, effect: 'debtAccumulationReduction' as const, effectValue: 0.05 },
-            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: '-10% debt accumulation', cost: 3, effect: 'debtAccumulationReduction' as const, effectValue: 0.10 },
-            { id: 'pair_programming', name: 'Pair Programming', description: '-15% debt penalty', cost: 5, effect: 'debtPenaltyMitigation' as const, effectValue: 0.15 },
-            { id: 'code_review', name: 'Code Review', description: '-20% debt penalty', cost: 10, effect: 'debtPenaltyMitigation' as const, effectValue: 0.20 },
-            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: '2× debt clearing efficiency', cost: 15, effect: 'debtClearingMultiplier' as const, effectValue: 2.00 },
-            { id: 'refactoring', name: 'Refactoring', description: '-25% debt accumulation', cost: 20, effect: 'debtAccumulationReduction' as const, effectValue: 0.25 },
-            { id: 'writing_tests', name: 'Writing Tests', description: '-30% debt penalty', cost: 25, effect: 'debtPenaltyMitigation' as const, effectValue: 0.30 },
-            { id: 'architecture_patterns', name: 'Architecture Patterns', description: '3× debt clearing efficiency', cost: 30, effect: 'debtClearingMultiplier' as const, effectValue: 3.00 },
-            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Debt penalty becomes bonus at high levels', cost: 35, effect: 'debtPenaltyMitigation' as const, effectValue: 0.50 },
-            { id: 'code_zen', name: 'Code Zen', description: 'Complete mastery over tech debt', cost: 40, effect: 'debtPenaltyMitigation' as const, effectValue: 1.00 }
+            { id: 'read_the_docs', name: 'Read the Docs', description: '-5% debt accumulation', cost: 1, modifiers: { debtAccumulationReduction: 0.05 } },
+            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: '-10% debt accumulation', cost: 3, modifiers: { debtAccumulationReduction: 0.10 } },
+            { id: 'pair_programming', name: 'Pair Programming', description: '-15% debt penalty', cost: 5, modifiers: { debtPenaltyReduction: 0.15 } },
+            { id: 'code_review', name: 'Code Review', description: '-20% debt penalty', cost: 10, modifiers: { debtPenaltyReduction: 0.20 } },
+            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: '2× debt clearing efficiency', cost: 15, modifiers: { debtClearingEfficiency: 2.00 } },
+            { id: 'refactoring', name: 'Refactoring', description: '-25% debt accumulation', cost: 20, modifiers: { debtAccumulationReduction: 0.25 } },
+            { id: 'writing_tests', name: 'Writing Tests', description: '-30% debt penalty', cost: 25, modifiers: { debtPenaltyReduction: 0.30 } },
+            { id: 'architecture_patterns', name: 'Architecture Patterns', description: '3× debt clearing efficiency', cost: 30, modifiers: { debtClearingEfficiency: 3.00 } },
+            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Debt penalty becomes bonus at high levels', cost: 35, modifiers: { unlockLegacyWhisperer: true } },
+            { id: 'code_zen', name: 'Code Zen', description: 'Complete mastery over tech debt', cost: 40, modifiers: { unlockCodeZen: true } }
         ]
     }
-} as const;
+} as unknown as { buyout: TechTree; nirvana: TechTree; linus: TechTree; learning: TechTree };
