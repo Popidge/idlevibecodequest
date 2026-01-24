@@ -60,8 +60,12 @@ class GameStore {
     pendingPrestigePoints = $state(0);
     selectedPrestigePath = $state<PrestigePath | null>(null);
 
-    // Computed values
-    get clickPower() {
+    // ========================================
+    // BASE STAT Getters (Raw Values - No Modifiers)
+    // These are the foundation for all calculations
+    // ========================================
+    
+    get baseClickPower() {
         // Each vibeCode upgrade level adds its level number to LoC per click
         // Level 1 = +1, Level 2 = +2, etc.
         let power = 1; // Base power
@@ -72,30 +76,18 @@ class GameStore {
         return power;
     }
 
-    get autoClickRate() {
-        // Legacy: still track for display purposes
-        // Returns "clicks per second" from delegation upgrades
-        // Each delegation upgrade level N adds N clicks/sec
-        let clicksPerSecond = 0;
-        for (const level in this.gameState.upgrades.delegation) {
-            const count = this.gameState.upgrades.delegation[level];
-            clicksPerSecond += parseInt(level) * count;
-        }
-        return clicksPerSecond;
-    }
-
-    get passiveLocRate() {
+    get basePassiveLocRate() {
         // LoC/sec from delegation: count × (tier + 0.02 × clickPower)
         // Each copy of an upgrade adds its tier value + 2% of click power
         let locPerSecond = 0;
         for (const level in this.gameState.upgrades.delegation) {
             const count = this.gameState.upgrades.delegation[level];
-            locPerSecond += count * (parseInt(level) + (0.02 * this.clickPower));
+            locPerSecond += count * (parseInt(level) + (0.02 * this.baseClickPower));
         }
         return locPerSecond;
     }
 
-    get passiveIncome() {
+    get basePassiveIncome() {
         let passive = 0;
         for (const projectId in this.gameState.projects.saas) {
             const project = PROJECTS.saas.find(p => p.id === projectId);
@@ -107,6 +99,77 @@ class GameStore {
         return passive;
     }
 
+    // ========================================
+    // TECH DEBT Getters (Single Source of Truth)
+    // ========================================
+    
+    get debtPenaltyFactor() {
+        // Tech debt affects ONLY cash/cred income, NOT LoC generation
+        // Penalty: (1 - debt)²
+        return Math.pow(1 - this.gameState.techDebt, 2);
+    }
+    
+    get debtAccumulationPerClick() {
+        // Base accumulation + per-project accumulation
+        return TECH_DEBT.BASE_ACCUMULATION + (this.gameState.projectsShipped * TECH_DEBT.PER_PROJECT);
+    }
+    
+    get debtAccumulationPerSecond() {
+        // Delegation gains: BASE × DELEGATION_DEBT_RATE per second
+        return TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE;
+    }
+
+    // ========================================
+    // PRESTIGE MULTIPLIER Getters (Single Source of Truth)
+    // ========================================
+    
+    get effectiveCashMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+    
+    get effectiveLocMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+    
+    get effectiveCredMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+
+    // ========================================
+    // EFFECTIVE STAT Getters (All Modifiers Applied)
+    // These are the AUTHORITATIVE values used for display and game logic
+    // ========================================
+    
+    get effectiveClickPower() {
+        // LoC/click: base × prestige multiplier (NO tech debt penalty)
+        return this.baseClickPower * this.effectiveLocMultiplier;
+    }
+    
+    get effectivePassiveLocRate() {
+        // LoC/sec: base × prestige multiplier (NO tech debt penalty)
+        return this.basePassiveLocRate * this.effectiveLocMultiplier;
+    }
+    
+    get effectivePassiveIncome() {
+        // $/sec: base × tech debt penalty × prestige cash multiplier
+        return this.basePassiveIncome * this.debtPenaltyFactor * this.effectiveCashMultiplier;
+    }
+    
+    // Helper methods for project rewards with ALL modifiers
+    getEffectiveProjectReward(baseReward: number): number {
+        return baseReward * this.debtPenaltyFactor * this.effectiveCashMultiplier;
+    }
+    
+    getEffectiveProjectCred(baseCred: number): number {
+        return Math.floor(baseCred * this.debtPenaltyFactor * this.effectiveCredMultiplier);
+    }
+
     get unlockedProjects() {
         return getUnlockedProjects(this.gameState.resources.cred);
     }
@@ -115,26 +178,7 @@ class GameStore {
         return getMaxUpgradeLevel(this.gameState.resources.cred);
     }
     
-    // Phase 1: Tech Debt System - Effective rates with debt penalty
-    // Tech debt affects ONLY cash/cred income, NOT LoC generation (per user request)
-    // effectiveIncome = rawIncome × (1 - debt)²
-    
-    // Click power is NOT affected by tech debt
-    get effectiveClickPower() {
-        return this.clickPower;
-    }
-    
-    // Delegation upgrades NOT affected by tech debt
-    get effectivePassiveLocRate() {
-        return this.passiveLocRate;
-    }
-    
-    get effectivePassiveIncome() {
-        const penaltyFactor = Math.pow(1 - this.gameState.techDebt, 2);
-        return this.passiveIncome * penaltyFactor;
-    }
-    
-    // Helper to format debt as percentage
+
     get debtPercentage() {
         return (this.gameState.techDebt * 100).toFixed(1) + '%';
     }
@@ -205,26 +249,6 @@ class GameStore {
         const points = Math.floor(Math.log10(cash + 1));
         return Math.max(points, PRESTIGE.MIN_POINTS);
     }
-    
-    // Effective multipliers with prestige bonuses
-    get effectiveCashMultiplier() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
-        return base + prestigeBonus;
-    }
-    
-    get effectiveLocMultiplier() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
-        return base + prestigeBonus;
-    }
-    
-    get effectiveCredMultiplier() {
-        const base = 1;
-        const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
-        return base + prestigeBonus;
-    }
-    
     get effectiveStartingCash() {
         return this.gameState.prestige?.bonuses.startingCash ?? 0;
     }
@@ -254,30 +278,33 @@ class GameStore {
         };
     }
     
-    // Phase 1: Accumulate tech debt (shared by manual and delegation clicks)
-    private accumulateDebt() {
-        const debtIncrease = TECH_DEBT.BASE_ACCUMULATION + 
-            (this.gameState.projectsShipped * TECH_DEBT.PER_PROJECT);
+    // Phase 1: Accumulate tech debt from clicks
+    // Uses debtAccumulationPerClick from single source of truth
+    accumulateDebtFromClick() {
         this.gameState.techDebt = Math.min(
-            this.gameState.techDebt + debtIncrease,
+            this.gameState.techDebt + this.debtAccumulationPerClick,
+            TECH_DEBT.MAX_DEBT
+        );
+    }
+    
+    // Phase 1: Accumulate tech debt from passive generation
+    // Uses debtAccumulationPerSecond from single source of truth
+    accumulateDebtFromPassive() {
+        this.gameState.techDebt = Math.min(
+            this.gameState.techDebt + this.debtAccumulationPerSecond,
             TECH_DEBT.MAX_DEBT
         );
     }
 
-    // Helper to get effective LoC gain with prestige multiplier
-    private getEffectiveLocGain(baseLoc: number): number {
-        return baseLoc * this.effectiveLocMultiplier;
-    }
-
     // Actions
     handlePromptClick(event: MouseEvent) {
-        const baseLocGained = this.clickPower;
-        const locGained = this.getEffectiveLocGain(baseLocGained);
+        // Use authoritative effectiveClickPower (base × prestige multiplier)
+        const locGained = this.effectiveClickPower;
         this.gameState.resources.loc += locGained;
         this.gameState.totalClicks++;
         
-        // Phase 1: Accumulate tech debt
-        this.accumulateDebt();
+        // Accumulate tech debt from click
+        this.accumulateDebtFromClick();
         
         this.addFloatText(event.clientX, event.clientY, `+${formatNumber(locGained)} LoC`);
         this.currentPrompt = PROMPT_MESSAGES[Math.floor(Math.random() * PROMPT_MESSAGES.length)];
@@ -299,10 +326,9 @@ class GameStore {
         
         this.gameState.resources.loc -= scaledLocCost;
         
-        // Phase 1: Apply tech debt penalty to cash and cred rewards
-        const penaltyFactor = Math.pow(1 - this.gameState.techDebt, 2);
-        const effectiveMoneyReward = Math.floor(project.reward * penaltyFactor);
-        const effectiveCredReward = Math.floor(project.cred * penaltyFactor);
+        // Apply rewards using authoritative helper methods (tech debt penalty + prestige multiplier)
+        const effectiveMoneyReward = this.getEffectiveProjectReward(project.reward);
+        const effectiveCredReward = this.getEffectiveProjectCred(project.cred);
         
         this.gameState.resources.money += effectiveMoneyReward;
         this.gameState.resources.cred += effectiveCredReward;
@@ -413,7 +439,7 @@ class GameStore {
         
         // Offline rate is 10% of normal passive rates
         // Tech debt does NOT increase while offline
-        const offlineLocRate = this.passiveLocRate * TECH_DEBT.OFFLINE_RATE;
+        const offlineLocRate = this.basePassiveLocRate * TECH_DEBT.OFFLINE_RATE;
         const offlineCashRate = this.effectivePassiveIncome * TECH_DEBT.OFFLINE_RATE;
         
         const locGained = Math.floor(offlineLocRate * hoursOffline * 3600);
@@ -461,34 +487,7 @@ class GameStore {
                     this.gameState.activeTab = { projects: 'standard', upgrades: 'vibeCode' };
                 }
                 
-                // Phase 1: Ensure tech debt fields exist (for backwards compatibility)
-                if (typeof this.gameState.techDebt !== 'number') {
-                    this.gameState.techDebt = 0;
-                }
-                if (typeof this.gameState.projectsShipped !== 'number') {
-                    this.gameState.projectsShipped = 0;
-                }
-                if (typeof this.gameState.lastSaveTime !== 'number') {
-                    this.gameState.lastSaveTime = Date.now();
-                }
-                
-                // Phase 3: Ensure prestige fields exist (for backwards compatibility)
-                if (!this.gameState.prestige) {
-                    this.gameState.prestige = {
-                        prestigePoints: 0,
-                        totalPrestiges: 0,
-                        pathHistory: [],
-                        runStartTime: Date.now(),
-                        totalCashEarnedThisRun: this.gameState.resources.money,
-                        bonuses: {
-                            startingCash: 0,
-                            cashMultiplier: 0,
-                            locMultiplier: 0,
-                            credMultiplier: 0
-                        }
-                    };
-                }
-                
+            
                 // Phase 2: Reset hint tracking on load
                 this.debtLowHintShown = false;
                 this.previousDebtState = this.gameState.techDebt < 0.1 ? 'low' : 'high';
@@ -533,18 +532,15 @@ class GameStore {
     startGameLoop() {
         $effect(() => {
             const interval = setInterval(() => {
-                // Delegation generates LoC/sec with prestige multiplier
-                if (this.passiveLocRate > 0) {
-                    const effectivePassiveLoc = this.getEffectiveLocGain(this.passiveLocRate);
-                    this.gameState.resources.loc += effectivePassiveLoc;
-                    // Phase 1: Delegation accumulates passive tech debt (0.1× single-click rate per second)
-                    this.gameState.techDebt = Math.min(
-                        this.gameState.techDebt + (TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE),
-                        TECH_DEBT.MAX_DEBT
-                    );
+                // Delegation generates LoC/sec using authoritative effectivePassiveLocRate
+                if (this.effectivePassiveLocRate > 0) {
+                    this.gameState.resources.loc += this.effectivePassiveLocRate;
+                    // Accumulate passive tech debt
+                    this.accumulateDebtFromPassive();
                 }
                 
-                if (this.passiveIncome > 0) {
+                // Passive income using authoritative effectivePassiveIncome
+                if (this.basePassiveIncome > 0) {
                     this.gameState.resources.money += this.effectivePassiveIncome;
                     this.trackCashEarned(this.effectivePassiveIncome);
                 }

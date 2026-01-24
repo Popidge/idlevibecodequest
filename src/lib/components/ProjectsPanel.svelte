@@ -14,18 +14,6 @@
         store.switchTab('projects', type);
     }
     
-    // Calculate effective reward with tech debt penalty
-    function getEffectiveReward(rawReward: number): number {
-        const penaltyFactor = Math.pow(1 - store.gameState.techDebt, 2);
-        return rawReward * penaltyFactor;
-    }
-    
-    // Calculate effective cred with tech debt penalty
-    function getEffectiveCred(rawCred: number): number {
-        const penaltyFactor = Math.pow(1 - store.gameState.techDebt, 2);
-        return rawCred * penaltyFactor;
-    }
-    
     // Format shipped count as version number (v0.1, v1.2, v14.8, etc.)
     function formatVersion(count: number): string {
         return `v${(count / 10).toFixed(1)}`;
@@ -76,8 +64,8 @@
                                 </span>
                                 <span class="item-cost">{locCost} LoC</span>
                                 <span class="item-reward">
-                                    → ${formatMoney(getEffectiveReward(project.reward))}
-                                    {#if project.cred > 0} + {getEffectiveCred(project.cred).toFixed(0)} Cred{/if}
+                                    → ${formatMoney(store.getEffectiveProjectReward(project.reward))}
+                                    {#if project.cred > 0} + {store.getEffectiveProjectCred(project.cred).toFixed(0)} Cred{/if}
                                     {#if 'recurring' in project && project.recurring} (recurring){/if}
                                 </span>
                             {/if}

@@ -70,11 +70,11 @@
         <div class="stat-divider">┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</div>
         <div class="stat-row">
             <span class="stat-label">Power:</span>
-            <span class="stat-value">{formatNumber(store.clickPower)} LoC/click</span>
+            <span class="stat-value">{formatNumber(store.effectiveClickPower)} LoC/click</span>
         </div>
         <div class="stat-row">
             <span class="stat-label">Delegation:</span>
-            <span class="stat-value">{formatNumber(store.passiveLocRate)} LoC/sec</span>
+            <span class="stat-value">{formatNumber(store.effectivePassiveLocRate)} LoC/sec</span>
         </div>
         {#if store.effectiveLocMultiplier > 1}
             <div class="stat-row multiplier-row">
@@ -82,12 +82,24 @@
                 <span class="stat-value multiplier">×{store.effectiveLocMultiplier.toFixed(2)}</span>
             </div>
         {/if}
+        {#if store.effectiveCashMultiplier > 1}
+            <div class="stat-row multiplier-row">
+                <span class="stat-label">Cash Multiplier:</span>
+                <span class="stat-value multiplier">×{store.effectiveCashMultiplier.toFixed(2)}</span>
+            </div>
+        {/if}
+        {#if store.effectiveCredMultiplier > 1}
+            <div class="stat-row multiplier-row">
+                <span class="stat-label">Cred Multiplier:</span>
+                <span class="stat-value multiplier">×{store.effectiveCredMultiplier.toFixed(2)}</span>
+            </div>
+        {/if}
         <div class="stat-row">
             <span class="stat-label">Passive:</span>
             <span class="stat-value" class:penalized={store.gameState.techDebt > 0}>
                 ${formatMoney(store.effectivePassiveIncome)}/sec
                 {#if store.gameState.techDebt > 0}
-                    <span class="original-value">(${formatMoney(store.passiveIncome)})</span>
+                    <span class="original-value">(${formatMoney(store.basePassiveIncome)})</span>
                 {/if}
             </span>
         </div>
