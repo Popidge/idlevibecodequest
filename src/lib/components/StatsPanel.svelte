@@ -1,12 +1,13 @@
 <script lang="ts">
-    import { 
+    import {
         store,
         formatNumber,
         formatMoney
     } from '$lib/game/store.svelte';
     import { TECH_DEBT } from '$lib/game/constants';
+    import { isDebugMode } from '$lib/env';
     import ProgressBar from './ProgressBar.svelte';
-    
+
     function openDebtModal() {
         store.showDebtModal = true;
     }
@@ -75,6 +76,12 @@
             <span class="stat-label">Delegation:</span>
             <span class="stat-value">{formatNumber(store.passiveLocRate)} LoC/sec</span>
         </div>
+        {#if store.effectiveLocMultiplier > 1}
+            <div class="stat-row multiplier-row">
+                <span class="stat-label">LoC Multiplier:</span>
+                <span class="stat-value multiplier">×{store.effectiveLocMultiplier.toFixed(2)}</span>
+            </div>
+        {/if}
         <div class="stat-row">
             <span class="stat-label">Passive:</span>
             <span class="stat-value" class:penalized={store.gameState.techDebt > 0}>
@@ -105,6 +112,19 @@
                 </button>
                 <div class="prestige-info">
                     <span class="prestige-points">+{store.prestigePointsToEarn} points</span>
+                </div>
+            </div>
+        {/if}
+
+        <!-- Debug mode section -->
+        {#if isDebugMode()}
+            <div class="debug-section">
+                <div class="debug-header">DEBUG MODE</div>
+                <button class="debug-btn" onclick={() => store.grantDebugResources()}>
+                    🐛 GET RESOURCES
+                </button>
+                <div class="debug-info">
+                    +1000 Cred, +$1000M, +1M LoC
                 </div>
             </div>
         {/if}
@@ -159,6 +179,14 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: nowrap;
+    }
+    
+    .multiplier-row {
+        padding-left: 8px;
+    }
+    
+    .multiplier {
+        color: var(--text-primary, #00ff00);
     }
 
     .stat-label {
@@ -316,5 +344,47 @@
     .prestige-points {
         color: var(--text-primary, #00ff00);
         font-size: 12px;
+    }
+
+    /* Debug mode styling */
+    .debug-section {
+        margin-top: 12px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--text-dim, #008800);
+    }
+
+    .debug-header {
+        color: var(--text-amber, #ffb000);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 6px;
+        text-align: center;
+    }
+
+    .debug-btn {
+        width: 100%;
+        background-color: var(--button-bg, #1a1a1a);
+        color: var(--text-primary, #00ff00);
+        border: 1px solid var(--text-primary, #00ff00);
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+    }
+
+    .debug-btn:hover {
+        background-color: var(--text-primary, #00ff00);
+        color: var(--panel-bg, #0f0f0f);
+    }
+
+    .debug-info {
+        text-align: center;
+        margin-top: 4px;
+        color: var(--text-dim, #008800);
+        font-size: 10px;
     }
 </style>

@@ -264,9 +264,15 @@ class GameStore {
         );
     }
 
+    // Helper to get effective LoC gain with prestige multiplier
+    private getEffectiveLocGain(baseLoc: number): number {
+        return baseLoc * this.effectiveLocMultiplier;
+    }
+
     // Actions
     handlePromptClick(event: MouseEvent) {
-        const locGained = this.clickPower;
+        const baseLocGained = this.clickPower;
+        const locGained = this.getEffectiveLocGain(baseLocGained);
         this.gameState.resources.loc += locGained;
         this.gameState.totalClicks++;
         
@@ -321,26 +327,37 @@ class GameStore {
     buyUpgrade(type: 'vibeCode' | 'delegation', level: number) {
         const upgradeList = UPGRADES[type];
         const upgrade = upgradeList.find(u => u.level === level);
-        
+
         if (!upgrade) return;
-        
+
         const currentCount = this.gameState.upgrades[type][level] || 0;
         const currentCost = getUpgradeCost(upgrade, currentCount);
-        
+
         if (this.gameState.resources.money < currentCost) {
             this.showNotification('Not enough money!');
             return;
         }
-        
+
         if (level > this.maxUpgradeLevel) {
             this.showNotification('Upgrade locked! Need more Cred.');
             return;
         }
-        
+
         this.gameState.resources.money -= currentCost;
         this.gameState.upgrades[type][level] = currentCount + 1;
-        
+
         this.showNotification(`Upgrade purchased! ${upgrade.desc}`);
+    }
+
+    // Debug mode: Grant resources for testing
+    grantDebugResources() {
+        // 1000 Cred, $1000M (1B), 1M LoC
+        this.gameState.resources.cred += 1000;
+        this.gameState.resources.money += 1000000000;
+        this.gameState.resources.loc += 1000000;
+
+        console.log('[DEBUG] Resources granted: +1000 Cred, +$1000M, +1M LoC');
+        this.showNotification('DEBUG: +1000 Cred, +$1000M, +1M LoC');
     }
     
     // Phase 1: Debt Reduction with scaling costs based on projects shipped
@@ -516,9 +533,10 @@ class GameStore {
     startGameLoop() {
         $effect(() => {
             const interval = setInterval(() => {
-                // Delegation generates LoC/sec
+                // Delegation generates LoC/sec with prestige multiplier
                 if (this.passiveLocRate > 0) {
-                    this.gameState.resources.loc += this.passiveLocRate;
+                    const effectivePassiveLoc = this.getEffectiveLocGain(this.passiveLocRate);
+                    this.gameState.resources.loc += effectivePassiveLoc;
                     // Phase 1: Delegation accumulates passive tech debt (0.1× single-click rate per second)
                     this.gameState.techDebt = Math.min(
                         this.gameState.techDebt + (TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE),
