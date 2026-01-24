@@ -23,7 +23,7 @@
     // Format progress bar label
     function formatProgressLabel(): string {
         if (!store.cheapestUpgrade) return '';
-        return `${formatNumber(store.gameState.resources.loc)} / ${formatNumber(store.cheapestUpgrade.cost)} LoC`;
+        return `${formatMoney(store.gameState.resources.money)} / ${formatMoney(store.cheapestUpgrade.cost)}`;
     }
 </script>
 
@@ -90,7 +90,7 @@
             <div class="progress-section">
                 <div class="progress-label">Next Upgrade:</div>
                 <ProgressBar 
-                    current={store.gameState.resources.loc} 
+                    current={store.gameState.resources.money} 
                     max={store.cheapestUpgrade.cost} 
                     label={formatProgressLabel()}
                 />

@@ -54,10 +54,13 @@
                     {#each PROJECTS[type.key] as project}
                         {@const count = store.gameState.projects[type.key][project.id] || 0}
                         {@const isUnlocked = store.unlockedProjects.includes(project.id)}
+                        {@const locCost = formatNumber(getProjectLocCost(project, count))}
+                        {@const canAfford = store.gameState.resources.loc >= getProjectLocCost(project, count)}
                         <button 
                             class="project-item"
                             class:locked={!isUnlocked}
                             class:purchased={count > 0}
+                            class:affordable={isUnlocked && canAfford}
                             onclick={() => isUnlocked && store.shipProject(type.key, project.id)}
                             disabled={!isUnlocked}
                         >
@@ -71,7 +74,7 @@
                                         <span class="count-badge">[{formatVersion(count)}]</span>
                                     {/if}
                                 </span>
-                                <span class="item-cost">{formatNumber(getProjectLocCost(project, count))} LoC</span>
+                                <span class="item-cost">{locCost} LoC</span>
                                 <span class="item-reward">
                                     → ${formatMoney(getEffectiveReward(project.reward))}
                                     {#if project.cred > 0} + {getEffectiveCred(project.cred).toFixed(0)} Cred{/if}
@@ -206,6 +209,17 @@
         cursor: default;
     }
 
+    .project-item.affordable {
+        background-color: #1a3a1a;
+        border-color: var(--text-secondary, #00cc00);
+        box-shadow: 0 0 6px rgba(0, 255, 0, 0.2);
+    }
+
+    .project-item.affordable:hover {
+        background-color: #2a4a2a;
+        border-color: var(--text-primary, #00ff00);
+    }
+
     .item-name {
         color: var(--text-primary, #00ff00);
         font-size: 12px;
@@ -231,8 +245,9 @@
     }
 
     .item-locked-text {
-        color: var(--disabled-color, #444444);
+        color: var(--text-amber, #ffb000);
         font-size: 10px;
+        font-weight: bold;
     }
 
     .projects-panel .panel-content,

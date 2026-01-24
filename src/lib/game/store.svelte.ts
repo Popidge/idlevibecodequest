@@ -49,6 +49,10 @@ class GameStore {
     hints = $state<Hint[]>([]);
     hintCooldowns = $state<Set<number>>(new Set());
     hintId = 0;
+    
+    // Phase 2: Track if debt low hint has been shown (to prevent repeat showings)
+    debtLowHintShown = false;
+    private previousDebtState: 'low' | 'high' = 'low';
 
     // Computed values
     get clickPower() {
@@ -303,7 +307,7 @@ class GameStore {
         // Offline rate is 10% of normal passive rates
         // Tech debt does NOT increase while offline
         const offlineLocRate = this.passiveLocRate * TECH_DEBT.OFFLINE_RATE;
-        const offlineCashRate = this.passiveIncome * TECH_DEBT.OFFLINE_RATE;
+        const offlineCashRate = this.effectivePassiveIncome * TECH_DEBT.OFFLINE_RATE;
         
         const locGained = Math.floor(offlineLocRate * hoursOffline * 3600);
         const cashGained = Math.floor(offlineCashRate * hoursOffline * 3600);
@@ -361,6 +365,10 @@ class GameStore {
                     this.gameState.lastSaveTime = Date.now();
                 }
                 
+                // Phase 2: Reset hint tracking on load
+                this.debtLowHintShown = false;
+                this.previousDebtState = this.gameState.techDebt < 0.1 ? 'low' : 'high';
+                
                 // Phase 1: Calculate offline gains
                 const gains = this.calculateOfflineGains();
                 if (gains.loc > 0 || gains.cash > 0) {
@@ -382,6 +390,10 @@ class GameStore {
             this.currentPrompt = PROMPT_MESSAGES[0];
             this.floatTexts = [];
             this.notifications = [];
+            // Phase 2: Reset hint tracking
+            this.hints = [];
+            this.debtLowHintShown = false;
+            this.previousDebtState = 'low';
             this.showNotification('Game reset!');
         }
     }
@@ -408,7 +420,7 @@ class GameStore {
                 }
                 
                 if (this.passiveIncome > 0) {
-                    this.gameState.resources.money += this.passiveIncome;
+                    this.gameState.resources.money += this.effectivePassiveIncome;
                 }
                 
                 // Phase 2: Check for hints every game tick (with rate limiting)
@@ -452,6 +464,17 @@ class GameStore {
     // Phase 2: Hint system - Check conditions and add hints
     private checkAndAddHints() {
         const now = Date.now();
+        
+        // Track debt state transitions to reset hint tracking
+        const isDebtLow = this.gameState.techDebt < 0.1;
+        const currentState = isDebtLow ? 'low' : 'high';
+        
+        // Reset debtLowHintShown when transitioning from high to low
+        if (this.previousDebtState === 'high' && currentState === 'low') {
+            this.debtLowHintShown = false;
+        }
+        this.previousDebtState = currentState;
+        
         const conditions: { check: () => boolean; condition: Hint['condition']; message: string }[] = [
             { 
                 check: () => this.gameState.techDebt > 0.4, 
@@ -459,7 +482,7 @@ class GameStore {
                 message: 'Tech debt high - consider clearing!' 
             },
             { 
-                check: () => this.gameState.techDebt < 0.1, 
+                check: () => isDebtLow && !this.debtLowHintShown, 
                 condition: 'debtLow', 
                 message: 'Debt low - good time to save LoC' 
             }
@@ -468,6 +491,10 @@ class GameStore {
         for (const { check, condition, message } of conditions) {
             if (check() && !this.hints.some(h => h.condition === condition)) {
                 this.addHint(message, condition);
+                // Mark debtLow as shown so it doesn't appear again until next high->low transition
+                if (condition === 'debtLow') {
+                    this.debtLowHintShown = true;
+                }
             }
         }
     }
