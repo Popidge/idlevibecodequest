@@ -123,7 +123,7 @@ export type TechTreeEffect =
     | 'debtClearingMultiplier'
     | 'credThresholdReduction'
     | 'prestigePointMultiplier'
-    | 'autoPurchaseThreshold'
+    | 'verticalIntegration'
     | 'locPerClick'
     | 'passiveLocRate';
 

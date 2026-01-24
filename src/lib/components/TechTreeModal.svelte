@@ -94,7 +94,7 @@
                                     {@const isLocked = !isPurchased && !canPurchase}
                                     {@const previousPurchased = index === 0 || store.getPurchasedNodes(activeTree.id).includes(index - 1)}
 
-                                    <div class="node-wrapper">
+                                    <div class="node-wrapper" style="--node-color: {activeTree.color}">
                                         {#if index > 0}
                                             <div class="connector" class:purchased={previousPurchased}></div>
                                         {/if}
@@ -103,7 +103,6 @@
                                             class:purchased={isPurchased}
                                             class:available={canPurchase && !isPurchased}
                                             class:locked={isLocked}
-                                            style="--node-color: {activeTree.color}"
                                             onclick={() => handlePurchase(activeTree.id, index)}
                                             disabled={isLocked || isPurchased}
                                         >

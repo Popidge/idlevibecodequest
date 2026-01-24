@@ -149,13 +149,14 @@ export const TECH_TREES = {
             { id: 'seed_funding', name: 'Seed Funding', description: '+5,000 starting cash', cost: 1, effect: 'startingCash' as const, effectValue: 5000 },
             { id: 'angel_investor', name: 'Angel Investor', description: '+15,000 starting cash', cost: 3, effect: 'startingCash' as const, effectValue: 15000 },
             { id: 'series_a', name: 'Series A', description: '+30% cash multiplier', cost: 5, effect: 'cashMultiplier' as const, effectValue: 0.30 },
-            { id: 'acqui_hire', name: 'Acqui-hire', description: 'Auto-purchase upgrades <10% of current LoC', cost: 10, effect: 'autoPurchaseThreshold' as const, effectValue: 0.10 },
+            { id: 'acqui_hire', name: 'Acqui-hire', description: '+40% cash multiplier', cost: 10, effect: 'cashMultiplier' as const, effectValue: 0.40 },
             { id: 'ipo', name: 'IPO', description: '+50% prestige point gain', cost: 15, effect: 'prestigePointMultiplier' as const, effectValue: 0.50 },
             { id: 'venture_capital', name: 'Venture Capital', description: '+40% cash multiplier', cost: 20, effect: 'cashMultiplier' as const, effectValue: 0.40 },
             { id: 'strategic_buyout', name: 'Strategic Buyout', description: '+$60,000 starting cash', cost: 25, effect: 'startingCash' as const, effectValue: 60000 },
-            { id: 'market_dominance', name: 'Market Dominance', description: 'Auto-purchase upgrades <15% of current LoC', cost: 30, effect: 'autoPurchaseThreshold' as const, effectValue: 0.15 },
+            { id: 'market_dominance', name: 'Market Dominance', description: '+50% cash multiplier', cost: 30, effect: 'cashMultiplier' as const, effectValue: 0.50 },
             { id: 'unicorn_status', name: 'Unicorn Status', description: '+100% prestige point gain', cost: 35, effect: 'prestigePointMultiplier' as const, effectValue: 1.00 },
-            { id: 'tech_empire', name: 'Tech Empire', description: '+100% cash multiplier', cost: 40, effect: 'cashMultiplier' as const, effectValue: 1.00 }
+            { id: 'tech_empire', name: 'Tech Empire', description: '+100% cash multiplier', cost: 40, effect: 'cashMultiplier' as const, effectValue: 1.00 },
+            { id: 'vertical_integration', name: 'Vertical Integration', description: 'Every second, automatically buy the cheapest upgrade', cost: 45, effect: 'verticalIntegration' as const, effectValue: 0 }
         ]
     },
     nirvana: {
@@ -169,7 +170,7 @@ export const TECH_TREES = {
             { id: 'vibe_streak', name: 'Vibe Streak', description: '+20% LoC per click', cost: 3, effect: 'locPerClick' as const, effectValue: 0.20 },
             { id: 'prompt_engineer', name: 'Prompt Engineer', description: '+30% LoC per click', cost: 5, effect: 'locPerClick' as const, effectValue: 0.30 },
             { id: 'ai_whisperer', name: 'AI Whisperer', description: '+50% LoC per click', cost: 10, effect: 'locPerClick' as const, effectValue: 0.50 },
-            { id: 'agi_integration', name: 'AGI Integration', description: '+100% LoC per click', cost: 15, effect: 'locPerClick' as const, effectValue: 1.00 },
+            { id: 'agi_integration', name: 'Ralph Loops', description: '+100% LoC per click', cost: 15, effect: 'locPerClick' as const, effectValue: 1.00 },
             { id: 'neural_enhancement', name: 'Neural Enhancement', description: '+25% passive LoC rate', cost: 20, effect: 'passiveLocRate' as const, effectValue: 0.25 },
             { id: 'quantum_code', name: 'Quantum Code', description: '+50% LoC multiplier', cost: 25, effect: 'locMultiplier' as const, effectValue: 0.50 },
             { id: 'digital_transcendence', name: 'Digital Transcendence', description: 'Increase LoC per click by 50%', cost: 30, effect: 'locPerClick' as const, effectValue: 0.50 },

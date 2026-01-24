@@ -211,11 +211,11 @@ class GameStore {
     }
 
     get unlockedProjects() {
-        return getUnlockedProjects(this.gameState.resources.cred);
+        return getUnlockedProjects(this.gameState.resources.cred, this.effectiveCredThresholdReduction);
     }
 
     get maxUpgradeLevel() {
-        return getMaxUpgradeLevel(this.gameState.resources.cred);
+        return getMaxUpgradeLevel(this.gameState.resources.cred, this.effectiveCredThresholdReduction);
     }
     
 
@@ -420,13 +420,18 @@ class GameStore {
 
     // Debug mode: Grant resources for testing
     grantDebugResources() {
-        // 1000 Cred, $1000M (1B), 1M LoC
+        // 1000 Cred, $1000M (1M LoC, 500 prestige points for all tech trees)
         this.gameState.resources.cred += 1000;
         this.gameState.resources.money += 1000000000;
         this.gameState.resources.loc += 1000000;
+        
+        // Give enough prestige points to unlock all tech tree nodes (4 trees × 184 = 756 points)
+        if (this.gameState.prestige) {
+            this.gameState.prestige.prestigePoints += 500;
+        }
 
-        console.log('[DEBUG] Resources granted: +1000 Cred, +$1000M, +1M LoC');
-        this.showNotification('DEBUG: +1000 Cred, +$1000M, +1M LoC');
+        console.log('[DEBUG] Resources granted: +1000 Cred, +$1000M, +1M LoC, +500 prestige points');
+        this.showNotification('DEBUG: +1000 Cred, +$1000M, +1M LoC, +500 PP');
     }
     
     // Phase 1: Debt Reduction with scaling costs based on projects shipped
@@ -532,6 +537,9 @@ class GameStore {
                 if (this.gameState.prestige && parsed.prestige && defaultPrestige) {
                     this.gameState.prestige.bonuses = { ...defaultPrestige.bonuses, ...parsed.prestige.bonuses };
                     this.gameState.prestige.techTrees = { ...defaultPrestige.techTrees, ...parsed.prestige.techTrees };
+                    
+                    // Clear credThresholdReduction from bonuses - now calculated dynamically from techTrees
+                    this.gameState.prestige.bonuses.credThresholdReduction = 0;
                 }
                 
                 if (!this.gameState.activeTab) {
@@ -594,6 +602,14 @@ class GameStore {
                 if (this.basePassiveIncome > 0) {
                     this.gameState.resources.money += this.effectivePassiveIncome;
                     this.trackCashEarned(this.effectivePassiveIncome);
+                }
+                
+                // Phase 4: Vertical Integration - Auto-purchase cheapest upgrade if enabled
+                if (this.hasVerticalIntegration && this.cheapestUpgrade) {
+                    const upgrade = this.cheapestUpgrade;
+                    if (this.gameState.resources.money >= upgrade.cost) {
+                        this.buyUpgrade(upgrade.type, upgrade.level);
+                    }
                 }
                 
                 // Phase 2: Check for hints every game tick (with rate limiting)
@@ -761,11 +777,6 @@ class GameStore {
             learning: []
         };
 
-        // Apply learning path debt relief BEFORE resetting techDebt
-        if (path === 'learning' && debtRelief > 0) {
-            this.gameState.techDebt = Math.max(0, this.gameState.techDebt - debtRelief);
-        }
-
         // Reset game state (preserve prestige data)
         this.gameState.resources = { money: 0, loc: 0, cred: 0 };
         this.gameState.upgrades = { vibeCode: {}, delegation: {} };
@@ -813,17 +824,18 @@ class GameStore {
 
         // Preserve tech trees
         this.gameState.prestige.techTrees = existingTechTrees;
-
-        // Accumulate bonuses (additive stacking)
-        this.gameState.prestige.bonuses.startingCash += startingCash;
-        this.gameState.prestige.bonuses.cashMultiplier += cashMultiplier;
-        this.gameState.prestige.bonuses.locMultiplier += locMultiplier;
-        this.gameState.prestige.bonuses.credMultiplier += credMultiplier;
-
-        // Learning path bonuses
-        if (path === 'learning') {
-            this.gameState.prestige.bonuses.debtAccumulationReduction += debtAccumulationReduction;
-            this.gameState.prestige.bonuses.debtPenaltyMitigation += debtPenaltyReduction;
+        
+        // Re-apply ALL tech tree bonuses from ALL purchased nodes across all paths
+        // This ensures bonuses persist even when prestiging on a different path
+        this.reapplyAllTechTreeBonuses();
+        
+        // Accumulate bonuses from the current prestige path's nodes
+        const tree = TECH_TREES[path];
+        for (const nodeIndex of existingTechTrees[path] || []) {
+            const node = tree.nodes[nodeIndex];
+            if (node) {
+                this.applyTechTreeNodeEffect(path, node);
+            }
         }
 
         // Close modals and show notification
@@ -959,13 +971,13 @@ class GameStore {
                 bonuses.debtClearingMultiplier *= node.effectValue;
                 break;
             case 'credThresholdReduction':
-                bonuses.credThresholdReduction += node.effectValue;
+                // No longer stored in bonuses - now calculated dynamically from techTrees
                 break;
             case 'prestigePointMultiplier':
                 bonuses.prestigePointMultiplier += node.effectValue;
                 break;
-            case 'autoPurchaseThreshold':
-                bonuses.autoPurchaseThreshold = Math.max(bonuses.autoPurchaseThreshold, node.effectValue);
+            case 'verticalIntegration':
+                // No bonus to track - just a flag that auto-purchase is enabled
                 break;
             case 'locPerClick':
                 // These are handled in effectiveClickPower getter
@@ -974,6 +986,13 @@ class GameStore {
                 // These are handled in effectivePassiveLocRate getter
                 break;
         }
+    }
+
+    // Re-apply all tech tree bonuses from ALL purchased nodes across all paths
+    // NOTE: Tech tree bonuses are now calculated fresh each time from techTrees array.
+    // This method is kept for backwards compatibility but doesn't need to do anything.
+    private reapplyAllTechTreeBonuses() {
+        // Bonuses are now calculated dynamically from techTrees - no action needed
     }
 
     // Tech Tree Modal methods
@@ -993,6 +1012,41 @@ class GameStore {
     // TECH TREE MODIFIER Getters
     // These apply tech tree bonuses to core calculations
     // ========================================
+
+    // ========================================
+    // TECH TREE BONUS Getters (Single Source of Truth = techTrees array)
+    // These are ALWAYS calculated fresh from purchased nodes, never stored separately
+    // ========================================
+
+    // Calculate total cred threshold reduction from ALL purchased tech tree nodes
+    get totalTechTreeCredThresholdReduction(): number {
+        let total = 0;
+        const paths: TechTreePath[] = ['buyout', 'nirvana', 'linus', 'learning'];
+        
+        for (const path of paths) {
+            const purchasedNodes = this.getPurchasedNodes(path);
+            const tree = TECH_TREES[path];
+            
+            for (const nodeIndex of purchasedNodes) {
+                const node = tree.nodes[nodeIndex];
+                if (node && node.effect === 'credThresholdReduction') {
+                    total += node.effectValue;
+                }
+            }
+        }
+        
+        return total;
+    }
+
+    // Effective cred threshold reduction for unlocking (tech tree bonuses are permanent)
+    get effectiveCredThresholdReduction() {
+        return this.totalTechTreeCredThresholdReduction;
+    }
+
+    // Check if vertical integration is unlocked (buyout tree node 10, index 9)
+    get hasVerticalIntegration() {
+        return this.getPurchasedNodes('buyout').includes(9);
+    }
 
     // Effective debt accumulation (with tech tree reduction)
     get effectiveDebtAccumulationPerClick() {
@@ -1019,15 +1073,16 @@ class GameStore {
         // Check if Code Zen is purchased (learning tree node index 9)
         const hasCodeZen = this.getPurchasedNodes('learning').includes(9);
 
-        // Legacy Whisperer: Prevents all tech debt penalty (full income at any debt)
-        if (hasLegacyWhisperer) {
-            return 1.0;
-        }
-
         // Code Zen: Takes reciprocal of penalty multiplier (turns penalty into bonus)
+        // Check Code Zen FIRST (node 9) before Legacy Whisperer (node 8)
         if (hasCodeZen) {
             // If mitigation is 0.5, effective multiplier becomes 2.0
             return 1 / (1 - Math.min(mitigation, 0.99));
+        }
+
+        // Legacy Whisperer: Prevents all tech debt penalty (full income at any debt)
+        if (hasLegacyWhisperer) {
+            return 1.0;
         }
 
         // Normal mitigation reduces the penalty
