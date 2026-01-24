@@ -1,7 +1,7 @@
 <script lang="ts">
     import { PROJECTS } from '$lib/game/constants';
     import { store, formatNumber, formatMoney, getProjectLocCost } from '$lib/game/store.svelte';
-    import { getRequiredCredForProject } from '$lib/game/utils';
+    import { getEffectiveRequiredCredForProject } from '$lib/game/utils';
 
     type ProjectType = 'standard' | 'saas' | 'openSource';
     const projectTypes: { key: ProjectType; label: string }[] = [
@@ -54,7 +54,8 @@
                         >
                             {#if !isUnlocked}
                                 <span class="item-name">🔒 {project.name}</span>
-                                <span class="item-locked-text">Need {getRequiredCredForProject(project.id)} Cred</span>
+                                {@const reducedCred = getEffectiveRequiredCredForProject(project.id, store.effectiveCredThresholdReduction)}
+                                <span class="item-locked-text">Need {reducedCred} Cred</span>
                             {:else}
                                 <span class="item-name">
                                     {project.name}

@@ -128,6 +128,18 @@
             </div>
         {/if}
 
+        <!-- Phase 4: Tech Tree section (always visible if player has prestige points) -->
+        {#if (store.totalPrestigePoints > 0) || (store.gameState.prestige?.totalPrestiges ?? 0) > 0}
+            <div class="tech-tree-section">
+                <button class="tech-tree-btn" onclick={() => store.openTechTree()}>
+                    🌳 TECH TREE
+                </button>
+                <div class="tech-tree-info">
+                    <span class="tech-tree-points">⭐ {store.totalPrestigePoints} points</span>
+                </div>
+            </div>
+        {/if}
+
         <!-- Debug mode section -->
         {#if isDebugMode()}
             <div class="debug-section">
@@ -352,9 +364,46 @@
         text-align: center;
         margin-top: 4px;
     }
-    
+
     .prestige-points {
         color: var(--text-primary, #00ff00);
+        font-size: 12px;
+    }
+
+    /* Phase 4: Tech Tree section */
+    .tech-tree-section {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--text-dim, #008800);
+    }
+
+    .tech-tree-btn {
+        width: 100%;
+        background-color: var(--button-bg, #1a1a1a);
+        color: var(--text-cyan, #00ccff);
+        border: 1px solid var(--text-cyan, #00ccff);
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .tech-tree-btn:hover {
+        background-color: var(--text-cyan, #00ccff);
+        color: var(--panel-bg, #0f0f0f);
+    }
+
+    .tech-tree-info {
+        text-align: center;
+        margin-top: 4px;
+    }
+
+    .tech-tree-points {
+        color: var(--text-cyan, #00ccff);
         font-size: 12px;
     }
 

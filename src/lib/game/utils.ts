@@ -36,12 +36,16 @@ export function getUpgradeCost(upgrade: Upgrade, count: number): number {
  * Determine the highest upgrade level available for the given credential amount.
  *
  * @param cred - The credential value used to check unlock thresholds
+ * @param credThresholdReduction - Reduction to apply to cred thresholds from tech tree bonuses
  * @returns The highest unlocked upgrade level for `cred`, or `0` if none are unlocked
  */
-export function getMaxUpgradeLevel(cred: number): number {
+export function getMaxUpgradeLevel(cred: number, credThresholdReduction: number = 0): number {
+    // credThresholdReduction means the unlock threshold is LOWER by that amount
+    // So the player's effective cred for unlocking is: cred + reduction
+    const effectiveCred = cred + credThresholdReduction;
     let maxLevel = 0;
     for (const unlock of UNLOCKS.upgrades) {
-        if (cred >= unlock.cred) {
+        if (effectiveCred >= unlock.cred) {
             maxLevel = unlock.maxLevel;
         }
     }
@@ -52,12 +56,16 @@ export function getMaxUpgradeLevel(cred: number): number {
  * List project IDs unlocked at the specified credential level.
  *
  * @param cred - The credential value used to evaluate unlock thresholds
+ * @param credThresholdReduction - Reduction to apply to cred thresholds from tech tree bonuses
  * @returns An array of unique project IDs unlocked for the given `cred`
  */
-export function getUnlockedProjects(cred: number): string[] {
+export function getUnlockedProjects(cred: number, credThresholdReduction: number = 0): string[] {
+    // credThresholdReduction means the unlock threshold is LOWER by that amount
+    // So the player's effective cred for unlocking is: cred + reduction
+    const effectiveCred = cred + credThresholdReduction;
     let unlocked: string[] = [];
     for (const unlock of UNLOCKS.projects) {
-        if (cred >= unlock.cred) {
+        if (effectiveCred >= unlock.cred) {
             unlocked = unlocked.concat(unlock.unlocks);
         }
     }
@@ -92,4 +100,28 @@ export function getRequiredCredForUpgrade(level: number): number {
         }
     }
     return 999;
+}
+
+/**
+ * Get the effective credential requirement for unlocking a project after tech tree reductions.
+ *
+ * @param projectId - The identifier of the project to query
+ * @param credThresholdReduction - Reduction to apply to cred thresholds from tech tree bonuses
+ * @returns The minimum credential value required to unlock `project`, or `0` if project is always unlocked
+ */
+export function getEffectiveRequiredCredForProject(projectId: string, credThresholdReduction: number = 0): number {
+    const baseCred = getRequiredCredForProject(projectId);
+    return Math.max(0, baseCred - credThresholdReduction);
+}
+
+/**
+ * Get the effective credential requirement for unlocking an upgrade level after tech tree reductions.
+ *
+ * @param level - The target upgrade level to evaluate
+ * @param credThresholdReduction - Reduction to apply to cred thresholds from tech tree bonuses
+ * @returns The minimum credential required to unlock the specified upgrade level
+ */
+export function getEffectiveRequiredCredForUpgrade(level: number, credThresholdReduction: number = 0): number {
+    const baseCred = getRequiredCredForUpgrade(level);
+    return Math.max(0, baseCred - credThresholdReduction);
 }

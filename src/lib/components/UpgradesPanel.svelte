@@ -1,7 +1,7 @@
 <script lang="ts">
     import { UPGRADES } from '$lib/game/constants';
     import { store, formatNumber } from '$lib/game/store.svelte';
-    import { getUpgradeCost, getRequiredCredForUpgrade } from '$lib/game/utils';
+    import { getUpgradeCost, getEffectiveRequiredCredForUpgrade } from '$lib/game/utils';
 
     type UpgradeType = 'vibeCode' | 'delegation';
     const upgradeTypes: { key: UpgradeType; label: string }[] = [
@@ -56,7 +56,8 @@
                         >
                             {#if !isUnlocked}
                                 <span class="item-name">🔒 {upgrade.name}</span>
-                                <span class="item-locked-text">Need {getRequiredCredForUpgrade(upgrade.level)} Cred</span>
+                                {@const reducedCred = getEffectiveRequiredCredForUpgrade(upgrade.level, store.effectiveCredThresholdReduction)}
+                                <span class="item-locked-text">Need {reducedCred} Cred</span>
                             {:else}
                                 <span class="item-name">
                                     {upgrade.name}

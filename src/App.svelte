@@ -14,6 +14,8 @@
     // Phase 3: Prestige modals
     import PrestigeSummaryModal from './lib/components/PrestigeSummaryModal.svelte';
     import PrestigePathModal from './lib/components/PrestigePathModal.svelte';
+    // Phase 4: Tech Tree modal
+    import TechTreeModal from './lib/components/TechTreeModal.svelte';
     import { store } from './lib/game/store.svelte';
 
     onMount(() => {
@@ -36,6 +38,8 @@
     <!-- Phase 3: Prestige modals -->
     <PrestigeSummaryModal />
     <PrestigePathModal />
+    <!-- Phase 4: Tech Tree modal -->
+    <TechTreeModal />
 </div>
 
 <style>
