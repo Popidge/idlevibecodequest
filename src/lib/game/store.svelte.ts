@@ -1,7 +1,7 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, OfflineGains, Hint, PrestigePath, PrestigeSummary } from './types';
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, type Upgrade, type Project } from './constants';
+import type { GameState, FloatText, Notification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
 
 // Default game state
@@ -28,7 +28,38 @@ const defaultState: GameState = {
     // Phase 1: Tech Debt System
     techDebt: 0,
     projectsShipped: 0,
-    lastSaveTime: Date.now()
+    lastSaveTime: Date.now(),
+    // Phase 3: Prestige System
+    prestige: {
+        prestigePoints: 0,
+        totalPrestiges: 0,
+        pathHistory: [],
+        runStartTime: Date.now(),
+        totalCashEarnedThisRun: 0,
+        bonuses: {
+            startingCash: 0,
+            cashMultiplier: 0,
+            locMultiplier: 0,
+            credMultiplier: 0,
+            totalStartingCash: 0,
+            totalCashMultiplier: 0,
+            totalLocMultiplier: 0,
+            totalCredMultiplier: 0,
+            debtAccumulationReduction: 0,
+            debtPenaltyMitigation: 0,
+            debtClearingMultiplier: 1,
+            credThresholdReduction: 0,
+            prestigePointMultiplier: 0,
+            autoPurchaseThreshold: 0
+        },
+        // Phase 4: Tech Tree purchases
+        techTrees: {
+            buyout: [],
+            nirvana: [],
+            linus: [],
+            learning: []
+        }
+    }
 };
 
 // Game state class with reactive properties
@@ -59,6 +90,10 @@ class GameStore {
     showPrestigeSummaryModal = $state(false);
     pendingPrestigePoints = $state(0);
     selectedPrestigePath = $state<PrestigePath | null>(null);
+
+    // Phase 4: Tech Tree system state
+    showTechTreeModal = $state(false);
+    activeTechTreeTab = $state<TechTreePath>('buyout');
 
     // ========================================
     // BASE STAT Getters (Raw Values - No Modifiers)
@@ -122,40 +157,45 @@ class GameStore {
     // ========================================
     // PRESTIGE MULTIPLIER Getters (Single Source of Truth)
     // ========================================
-    
+
     get effectiveCashMultiplier() {
         const base = 1;
         const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
-        return base + prestigeBonus;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalCashMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
     }
-    
+
     get effectiveLocMultiplier() {
         const base = 1;
         const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
-        return base + prestigeBonus;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalLocMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
     }
-    
+
     get effectiveCredMultiplier() {
         const base = 1;
         const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
-        return base + prestigeBonus;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalCredMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
     }
 
     // ========================================
     // EFFECTIVE STAT Getters (All Modifiers Applied)
     // These are the AUTHORITATIVE values used for display and game logic
     // ========================================
-    
+
     get effectiveClickPower() {
-        // LoC/click: base × prestige multiplier (NO tech debt penalty)
-        return this.baseClickPower * this.effectiveLocMultiplier;
+        // LoC/click: base × prestige multiplier × tech tree bonus (NO tech debt penalty)
+        const techTreeBonus = 1 + this.techTreeLocPerClickBonus;
+        return this.baseClickPower * this.effectiveLocMultiplier * techTreeBonus;
     }
-    
+
     get effectivePassiveLocRate() {
-        // LoC/sec: base × prestige multiplier (NO tech debt penalty)
-        return this.basePassiveLocRate * this.effectiveLocMultiplier;
+        // LoC/sec: base × prestige multiplier × tech tree bonus (NO tech debt penalty)
+        const techTreeBonus = 1 + this.techTreePassiveLocRateBonus;
+        return this.basePassiveLocRate * this.effectiveLocMultiplier * techTreeBonus;
     }
-    
+
     get effectivePassiveIncome() {
         // $/sec: base × tech debt penalty × prestige cash multiplier
         return this.basePassiveIncome * this.debtPenaltyFactor * this.effectiveCashMultiplier;
@@ -279,19 +319,19 @@ class GameStore {
     }
     
     // Phase 1: Accumulate tech debt from clicks
-    // Uses debtAccumulationPerClick from single source of truth
+    // Uses effectiveDebtAccumulationPerClick with tech tree reduction
     accumulateDebtFromClick() {
         this.gameState.techDebt = Math.min(
-            this.gameState.techDebt + this.debtAccumulationPerClick,
+            this.gameState.techDebt + this.effectiveDebtAccumulationPerClick,
             TECH_DEBT.MAX_DEBT
         );
     }
-    
+
     // Phase 1: Accumulate tech debt from passive generation
-    // Uses debtAccumulationPerSecond from single source of truth
+    // Uses effectiveDebtAccumulationPerSecond with tech tree reduction
     accumulateDebtFromPassive() {
         this.gameState.techDebt = Math.min(
-            this.gameState.techDebt + this.debtAccumulationPerSecond,
+            this.gameState.techDebt + this.effectiveDebtAccumulationPerSecond,
             TECH_DEBT.MAX_DEBT
         );
     }
@@ -671,24 +711,45 @@ class GameStore {
     
     performPrestige(path: PrestigePath) {
         const pointsToEarn = this.pendingPrestigePoints;
-        
+
         // Calculate bonuses based on path
         const startingCash = (path === 'buyout')
             ? pointsToEarn * PRESTIGE.STARTING_CASH_PER_POINT
             : 0;
-        
+
         const cashMultiplier = (path === 'buyout')
             ? pointsToEarn * PRESTIGE.CASH_MULTIPLIER_PER_POINT
             : 0;
-        
+
         const locMultiplier = (path === 'nirvana')
             ? pointsToEarn * PRESTIGE.LOC_MULTIPLIER_PER_POINT
             : 0;
-        
+
         const credMultiplier = (path === 'linus')
             ? pointsToEarn * PRESTIGE.CRED_MULTIPLIER_PER_POINT
             : 0;
-        
+
+        // Learning path bonuses (tech debt mitigation)
+        const debtRelief = (path === 'learning')
+            ? pointsToEarn * PRESTIGE.DEBT_RELIEF_PER_POINT
+            : 0;
+
+        const debtAccumulationReduction = (path === 'learning')
+            ? pointsToEarn * PRESTIGE.DEBT_ACCUMULATION_REDUCTION
+            : 0;
+
+        const debtPenaltyReduction = (path === 'learning')
+            ? pointsToEarn * PRESTIGE.DEBT_PENALTY_REDUCTION
+            : 0;
+
+        // Preserve existing tech trees
+        const existingTechTrees = this.gameState.prestige?.techTrees ?? {
+            buyout: [],
+            nirvana: [],
+            linus: [],
+            learning: []
+        };
+
         // Reset game state (preserve prestige data)
         this.gameState.resources = { money: 0, loc: 0, cred: 0 };
         this.gameState.upgrades = { vibeCode: {}, delegation: {} };
@@ -696,10 +757,15 @@ class GameStore {
         this.gameState.totalClicks = 0;
         this.gameState.techDebt = 0;
         this.gameState.projectsShipped = 0;
-        
+
         // Apply starting cash bonus
         this.gameState.resources.money = startingCash;
-        
+
+        // Apply learning path debt relief
+        if (path === 'learning' && debtRelief > 0) {
+            this.gameState.techDebt = Math.max(0, this.gameState.techDebt - debtRelief);
+        }
+
         // Update prestige state
         if (!this.gameState.prestige) {
             this.gameState.prestige = {
@@ -712,28 +778,48 @@ class GameStore {
                     startingCash: 0,
                     cashMultiplier: 0,
                     locMultiplier: 0,
-                    credMultiplier: 0
-                }
+                    credMultiplier: 0,
+                    totalStartingCash: 0,
+                    totalCashMultiplier: 0,
+                    totalLocMultiplier: 0,
+                    totalCredMultiplier: 0,
+                    debtAccumulationReduction: 0,
+                    debtPenaltyMitigation: 0,
+                    debtClearingMultiplier: 1,
+                    credThresholdReduction: 0,
+                    prestigePointMultiplier: 0,
+                    autoPurchaseThreshold: 0
+                },
+                techTrees: existingTechTrees
             };
         }
-        
+
         this.gameState.prestige.prestigePoints += pointsToEarn;
         this.gameState.prestige.totalPrestiges += 1;
         this.gameState.prestige.pathHistory.push(path);
         this.gameState.prestige.runStartTime = Date.now();
         this.gameState.prestige.totalCashEarnedThisRun = 0;
-        
+
+        // Preserve tech trees
+        this.gameState.prestige.techTrees = existingTechTrees;
+
         // Accumulate bonuses (additive stacking)
         this.gameState.prestige.bonuses.startingCash += startingCash;
         this.gameState.prestige.bonuses.cashMultiplier += cashMultiplier;
         this.gameState.prestige.bonuses.locMultiplier += locMultiplier;
         this.gameState.prestige.bonuses.credMultiplier += credMultiplier;
-        
+
+        // Learning path bonuses
+        if (path === 'learning') {
+            this.gameState.prestige.bonuses.debtAccumulationReduction += debtAccumulationReduction;
+            this.gameState.prestige.bonuses.debtPenaltyMitigation += debtPenaltyReduction;
+        }
+
         // Close modals and show notification
         this.showPrestigeModal = false;
         this.selectedPrestigePath = null;
         this.pendingPrestigePoints = 0;
-        
+
         this.showNotification(`PRESTIGE! +${pointsToEarn} prestige points! New run begins...`);
     }
     
@@ -759,11 +845,248 @@ class GameStore {
         }
     }
 
+    // ========================================
+    // TECH TREE Getters (Single Source of Truth)
+    // ========================================
+
+    // Get total prestige points available
+    get totalPrestigePoints() {
+        return this.gameState.prestige?.prestigePoints ?? 0;
+    }
+
+    // Get purchased nodes for a specific tree
+    getPurchasedNodes(path: TechTreePath): number[] {
+        return this.gameState.prestige?.techTrees[path] ?? [];
+    }
+
+    // Check if a node can be purchased (previous node must be purchased, have enough points)
+    canPurchaseNode(path: TechTreePath, nodeIndex: number): boolean {
+        const tree = TECH_TREES[path];
+        const node = tree.nodes[nodeIndex];
+        if (!node) return false;
+
+        // Must have enough prestige points
+        if (this.totalPrestigePoints < node.cost) return false;
+
+        // Must have purchased previous node (or be the first node)
+        const purchased = this.getPurchasedNodes(path);
+        if (nodeIndex > 0 && !purchased.includes(nodeIndex - 1)) return false;
+
+        // Must not already own this node
+        if (purchased.includes(nodeIndex)) return false;
+
+        return true;
+    }
+
+    // Get the next available node index for a tree (or -1 if all purchased)
+    getNextNodeIndex(path: TechTreePath): number {
+        const purchased = this.getPurchasedNodes(path);
+        const tree = TECH_TREES[path];
+        for (let i = 0; i < tree.nodes.length; i++) {
+            if (!purchased.includes(i)) return i;
+        }
+        return -1; // All nodes purchased
+    }
+
+    // Purchase a tech tree node
+    purchaseTechTreeNode(path: TechTreePath, nodeIndex: number): boolean {
+        if (!this.canPurchaseNode(path, nodeIndex)) {
+            this.showNotification('Cannot purchase this node!');
+            return false;
+        }
+
+        const tree = TECH_TREES[path];
+        const node = tree.nodes[nodeIndex];
+
+        // Deduct prestige points
+        if (this.gameState.prestige) {
+            this.gameState.prestige.prestigePoints -= node.cost;
+        }
+
+        // Add to purchased nodes
+        if (this.gameState.prestige) {
+            this.gameState.prestige.techTrees[path].push(nodeIndex);
+        }
+
+        // Apply the node effect to bonuses
+        this.applyTechTreeNodeEffect(path, node);
+
+        this.showNotification(`Tech tree node unlocked: ${node.name}`);
+        return true;
+    }
+
+    // Apply a tech tree node effect to the bonuses
+    private applyTechTreeNodeEffect(path: TechTreePath, node: TechTreeNode) {
+        if (!this.gameState.prestige) return;
+
+        const bonuses = this.gameState.prestige.bonuses;
+
+        switch (node.effect) {
+            case 'startingCash':
+                bonuses.totalStartingCash += node.effectValue;
+                break;
+            case 'cashMultiplier':
+                bonuses.totalCashMultiplier += node.effectValue;
+                break;
+            case 'locMultiplier':
+                bonuses.totalLocMultiplier += node.effectValue;
+                break;
+            case 'credMultiplier':
+                bonuses.totalCredMultiplier += node.effectValue;
+                break;
+            case 'debtAccumulationReduction':
+                bonuses.debtAccumulationReduction += node.effectValue;
+                break;
+            case 'debtPenaltyMitigation':
+                bonuses.debtPenaltyMitigation += node.effectValue;
+                break;
+            case 'debtClearingMultiplier':
+                bonuses.debtClearingMultiplier *= node.effectValue;
+                break;
+            case 'credThresholdReduction':
+                bonuses.credThresholdReduction += node.effectValue;
+                break;
+            case 'prestigePointMultiplier':
+                bonuses.prestigePointMultiplier += node.effectValue;
+                break;
+            case 'autoPurchaseThreshold':
+                bonuses.autoPurchaseThreshold = Math.max(bonuses.autoPurchaseThreshold, node.effectValue);
+                break;
+            case 'locPerClick':
+                // These are handled in effectiveClickPower getter
+                break;
+            case 'passiveLocRate':
+                // These are handled in effectivePassiveLocRate getter
+                break;
+        }
+    }
+
+    // Tech Tree Modal methods
+    openTechTree() {
+        this.showTechTreeModal = true;
+    }
+
+    closeTechTree() {
+        this.showTechTreeModal = false;
+    }
+
+    setActiveTechTreeTab(tab: TechTreePath) {
+        this.activeTechTreeTab = tab;
+    }
+
+    // ========================================
+    // TECH TREE MODIFIER Getters
+    // These apply tech tree bonuses to core calculations
+    // ========================================
+
+    // Effective debt accumulation (with tech tree reduction)
+    get effectiveDebtAccumulationPerClick() {
+        const base = TECH_DEBT.BASE_ACCUMULATION + (this.gameState.projectsShipped * TECH_DEBT.PER_PROJECT);
+        const reduction = this.gameState.prestige?.bonuses.debtAccumulationReduction ?? 0;
+        return base * (1 - Math.min(reduction, 0.95)); // Cap at 95% reduction
+    }
+
+    // Effective debt accumulation per second
+    get effectiveDebtAccumulationPerSecond() {
+        const base = TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE;
+        const reduction = this.gameState.prestige?.bonuses.debtAccumulationReduction ?? 0;
+        return base * (1 - Math.min(reduction, 0.95));
+    }
+
+    // Effective debt penalty factor (with tech tree mitigation)
+    get effectiveDebtPenaltyFactor() {
+        const basePenalty = Math.pow(1 - this.gameState.techDebt, 2);
+        const mitigation = this.gameState.prestige?.bonuses.debtPenaltyMitigation ?? 0;
+
+        // Legacy Whisperer and Code Zen: at high debt, penalty becomes bonus
+        if (this.gameState.techDebt > 0.3 && mitigation > 0.3) {
+            // Convert penalty to small bonus at high debt levels
+            const bonusAtHighDebt = (this.gameState.techDebt - 0.3) * mitigation * 0.5;
+            return Math.max(0.1, basePenalty - bonusAtHighDebt);
+        }
+
+        // Normal mitigation reduces the penalty
+        return Math.max(0.1, basePenalty + (1 - basePenalty) * mitigation);
+    }
+
+    // Effective debt clearing efficiency
+    get effectiveDebtClearingEfficiency() {
+        return this.gameState.prestige?.bonuses.debtClearingMultiplier ?? 1;
+    }
+
+    // Effective cash multiplier (prestige + tech tree)
+    get effectiveCashMultiplierWithTechTree() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalCashMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
+    }
+
+    // Effective LoC multiplier (prestige + tech tree)
+    get effectiveLocMultiplierWithTechTree() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalLocMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
+    }
+
+    // Effective Cred multiplier (prestige + tech tree)
+    get effectiveCredMultiplierWithTechTree() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalCredMultiplier ?? 0;
+        return base + prestigeBonus + techTreeBonus;
+    }
+
+    // Effective starting cash (prestige + tech tree)
+    get effectiveStartingCashWithTechTree() {
+        const prestigeBonus = this.gameState.prestige?.bonuses.startingCash ?? 0;
+        const techTreeBonus = this.gameState.prestige?.bonuses.totalStartingCash ?? 0;
+        return prestigeBonus + techTreeBonus;
+    }
+
+    // Effective prestige point multiplier
+    get effectivePrestigePointMultiplier() {
+        const base = 1;
+        const techTreeBonus = this.gameState.prestige?.bonuses.prestigePointMultiplier ?? 0;
+        return base + techTreeBonus;
+    }
+
+    // LoC per click bonus from tech tree nodes
+    get techTreeLocPerClickBonus() {
+        let bonus = 0;
+        const nirvanaNodes = this.getPurchasedNodes('nirvana');
+
+        for (const nodeIndex of nirvanaNodes) {
+            const node = TECH_TREES.nirvana.nodes[nodeIndex];
+            if (node.effect === 'locPerClick') {
+                bonus += node.effectValue;
+            }
+        }
+
+        return bonus;
+    }
+
+    // Passive LoC rate bonus from tech tree nodes
+    get techTreePassiveLocRateBonus() {
+        let bonus = 0;
+        const nirvanaNodes = this.getPurchasedNodes('nirvana');
+
+        for (const nodeIndex of nirvanaNodes) {
+            const node = TECH_TREES.nirvana.nodes[nodeIndex];
+            if (node.effect === 'passiveLocRate') {
+                bonus += node.effectValue;
+            }
+        }
+
+        return bonus;
+    }
+
     init() {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.3.3 initialized!');
+        console.log('Idle Vibe Code Quest v0.3.4 initialized!');
     }
 }
 

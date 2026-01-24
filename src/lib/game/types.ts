@@ -57,13 +57,24 @@ export interface Hint {
 }
 
 // Phase 3: Prestige System
-export type PrestigePath = 'buyout' | 'nirvana' | 'linus';
+export type PrestigePath = 'buyout' | 'nirvana' | 'linus' | 'learning';
 
 export interface PrestigeBonuses {
     startingCash: number;
     cashMultiplier: number;
     locMultiplier: number;
     credMultiplier: number;
+    // Tech tree bonus accumulators
+    totalStartingCash: number;
+    totalCashMultiplier: number;
+    totalLocMultiplier: number;
+    totalCredMultiplier: number;
+    debtAccumulationReduction: number;
+    debtPenaltyMitigation: number;
+    debtClearingMultiplier: number;
+    credThresholdReduction: number;
+    prestigePointMultiplier: number;
+    autoPurchaseThreshold: number;
 }
 
 export interface PrestigeState {
@@ -73,6 +84,13 @@ export interface PrestigeState {
     runStartTime: number;
     totalCashEarnedThisRun: number;
     bonuses: PrestigeBonuses;
+    // Phase 4: Tech tree purchases
+    techTrees: {
+        buyout: number[];      // Array of purchased node indices (0-9)
+        nirvana: number[];
+        linus: number[];
+        learning: number[];
+    };
 }
 
 export interface PrestigeSummary {
@@ -81,4 +99,39 @@ export interface PrestigeSummary {
     cashEarned: number;
     projectsShipped: number;
     upgradesOwned: number;
+}
+
+// Phase 4: Tech Tree System
+export type TechTreePath = 'buyout' | 'nirvana' | 'linus' | 'learning';
+
+export interface TechTreeNode {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    effect: TechTreeEffect;
+    effectValue: number;
+}
+
+export type TechTreeEffect = 
+    | 'startingCash'
+    | 'cashMultiplier'
+    | 'locMultiplier'
+    | 'credMultiplier'
+    | 'debtAccumulationReduction'
+    | 'debtPenaltyMitigation'
+    | 'debtClearingMultiplier'
+    | 'credThresholdReduction'
+    | 'prestigePointMultiplier'
+    | 'autoPurchaseThreshold'
+    | 'locPerClick'
+    | 'passiveLocRate';
+
+export interface TechTree {
+    path: TechTreePath;
+    name: string;
+    icon: string;
+    color: string;
+    description: string;
+    nodes: TechTreeNode[];
 }

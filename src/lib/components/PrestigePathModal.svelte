@@ -23,6 +23,13 @@
             icon: '⭐',
             description: 'Credibility gain multiplier',
             color: '#ffb000'
+        },
+        {
+            id: 'learning' as PrestigePath,
+            name: 'Learning to... Code?',
+            icon: '📚',
+            description: 'Tech debt mitigation & clearing efficiency',
+            color: '#ff00ff'
         }
     ] as const;
     
@@ -95,7 +102,7 @@
                                         <span class="bonus-label">Total LoC Bonus:</span>
                                         <span class="bonus-value">+{formatMultiplier(currentTotal.locMultiplier + (points * 0.15))}</span>
                                     </div>
-                                {:else}
+                                {:else if path.id === 'linus'}
                                     <div class="bonus-row">
                                         <span class="bonus-label">Cred Multiplier:</span>
                                         <span class="bonus-value">+{formatMultiplier(points * 0.25)}</span>
@@ -103,6 +110,19 @@
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Cred Bonus:</span>
                                         <span class="bonus-value">+{formatMultiplier(currentTotal.credMultiplier + (points * 0.25))}</span>
+                                    </div>
+                                {:else}
+                                    <div class="bonus-row">
+                                        <span class="bonus-label">Debt Relief:</span>
+                                        <span class="bonus-value">-{(points * 0.02 * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="bonus-row">
+                                        <span class="bonus-label">Debt Reduction:</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * 0.05)}</span>
+                                    </div>
+                                    <div class="bonus-row total">
+                                        <span class="bonus-label">Penalty Reduction:</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * 0.05)}</span>
                                     </div>
                                 {/if}
                             </div>
@@ -169,8 +189,8 @@
     
     .paths-container {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
         margin-bottom: 20px;
     }
     
