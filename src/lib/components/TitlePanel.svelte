@@ -3,7 +3,7 @@
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">┌─ idle-vibe-code v0.3.2 ─┐</div>
+    <div class="panel-header">┌─ idle-vibe-code v0.3.3 ─┐</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗
@@ -17,6 +17,13 @@
         </pre>
     </div>
     <div class="panel-footer title-footer">
+        <span class="prestige-display">
+            {#if store.gameState.prestige?.prestigePoints}
+                ⭐ {store.gameState.prestige.prestigePoints} pts
+            {:else}
+                ⭐ 0 pts
+            {/if}
+        </span>
         <button class="window-btn" onclick={() => store.saveGame()}>[ SAVE ]</button>
         <button class="window-btn" onclick={() => store.resetGame()}>[ RESET ]</button>
     </div>
@@ -95,5 +102,11 @@
     .window-btn:hover {
         background-color: var(--button-hover, #2a2a2a);
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+    }
+    
+    .prestige-display {
+        color: var(--text-amber, #ffb000);
+        font-size: 10px;
+        margin-right: 8px;
     }
 </style>

@@ -26,6 +26,8 @@ export interface GameState {
     techDebt: number;
     projectsShipped: number;
     lastSaveTime: number;
+    // Phase 3: Prestige System
+    prestige?: PrestigeState;
 }
 
 export interface FloatText {
@@ -52,4 +54,31 @@ export interface Hint {
     message: string;
     condition: 'debtHigh' | 'debtLow' | 'prestigeSoon';
     timestamp: number;
+}
+
+// Phase 3: Prestige System
+export type PrestigePath = 'buyout' | 'nirvana' | 'linus';
+
+export interface PrestigeBonuses {
+    startingCash: number;
+    cashMultiplier: number;
+    locMultiplier: number;
+    credMultiplier: number;
+}
+
+export interface PrestigeState {
+    prestigePoints: number;
+    totalPrestiges: number;
+    pathHistory: PrestigePath[];
+    runStartTime: number;
+    totalCashEarnedThisRun: number;
+    bonuses: PrestigeBonuses;
+}
+
+export interface PrestigeSummary {
+    pointsEarned: number;
+    runDuration: string;
+    cashEarned: number;
+    projectsShipped: number;
+    upgradesOwned: number;
 }

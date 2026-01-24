@@ -1,7 +1,7 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, OfflineGains, Hint } from './types';
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, type Upgrade, type Project } from './constants';
+import type { GameState, FloatText, Notification, OfflineGains, Hint, PrestigePath, PrestigeSummary } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects } from './utils';
 
 // Default game state
@@ -53,6 +53,12 @@ class GameStore {
     // Phase 2: Track if debt low hint has been shown (to prevent repeat showings)
     debtLowHintShown = false;
     private previousDebtState: 'low' | 'high' = 'low';
+    
+    // Phase 3: Prestige system state
+    showPrestigeModal = $state(false);
+    showPrestigeSummaryModal = $state(false);
+    pendingPrestigePoints = $state(0);
+    selectedPrestigePath = $state<PrestigePath | null>(null);
 
     // Computed values
     get clickPower() {
@@ -165,6 +171,89 @@ class GameStore {
         return Math.min((this.gameState.resources.loc / this.cheapestUpgrade.cost) * 100, 100);
     }
     
+    // Phase 3: Prestige System - Total upgrades available (vibeCode 1-10 + delegation 1-10 = 20 total)
+    get totalUpgradesAvailable() {
+        return UPGRADES.vibeCode.length + UPGRADES.delegation.length;
+    }
+    
+    // Count total upgrades owned
+    get totalUpgradesOwned() {
+        let owned = 0;
+        for (const level in this.gameState.upgrades.vibeCode) {
+            owned += this.gameState.upgrades.vibeCode[level];
+        }
+        for (const level in this.gameState.upgrades.delegation) {
+            owned += this.gameState.upgrades.delegation[level];
+        }
+        return owned;
+    }
+    
+    // Percentage of upgrades owned (0-1)
+    get upgradePercentage() {
+        return this.totalUpgradesOwned / this.totalUpgradesAvailable;
+    }
+    
+    // Is prestige available at 70% threshold?
+    get isPrestigeAvailable() {
+        return this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT;
+    }
+    
+    // Calculate prestige points to earn
+    get prestigePointsToEarn() {
+        // Formula: floor(log10(total cash + 1))
+        const cash = this.gameState.prestige?.totalCashEarnedThisRun ?? this.gameState.resources.money;
+        const points = Math.floor(Math.log10(cash + 1));
+        return Math.max(points, PRESTIGE.MIN_POINTS);
+    }
+    
+    // Effective multipliers with prestige bonuses
+    get effectiveCashMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.cashMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+    
+    get effectiveLocMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.locMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+    
+    get effectiveCredMultiplier() {
+        const base = 1;
+        const prestigeBonus = this.gameState.prestige?.bonuses.credMultiplier ?? 0;
+        return base + prestigeBonus;
+    }
+    
+    get effectiveStartingCash() {
+        return this.gameState.prestige?.bonuses.startingCash ?? 0;
+    }
+    
+    // Track total cash earned this run
+    get totalCashEarnedThisRun() {
+        return this.gameState.prestige?.totalCashEarnedThisRun ?? this.gameState.resources.money;
+    }
+    
+    // Get formatted run duration
+    get runDuration() {
+        const startTime = this.gameState.prestige?.runStartTime ?? Date.now();
+        const elapsed = Date.now() - startTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        return `${minutes}m ${seconds}s`;
+    }
+    
+    // Generate prestige summary
+    get prestigeSummary(): PrestigeSummary {
+        return {
+            pointsEarned: this.prestigePointsToEarn,
+            runDuration: this.runDuration,
+            cashEarned: this.totalCashEarnedThisRun,
+            projectsShipped: this.gameState.projectsShipped,
+            upgradesOwned: this.totalUpgradesOwned
+        };
+    }
+    
     // Phase 1: Accumulate tech debt (shared by manual and delegation clicks)
     private accumulateDebt() {
         const debtIncrease = TECH_DEBT.BASE_ACCUMULATION + 
@@ -211,6 +300,7 @@ class GameStore {
         
         this.gameState.resources.money += effectiveMoneyReward;
         this.gameState.resources.cred += effectiveCredReward;
+        this.trackCashEarned(effectiveMoneyReward);
         
         this.gameState.projects[type][projectId] = currentCount + 1;
         
@@ -365,6 +455,23 @@ class GameStore {
                     this.gameState.lastSaveTime = Date.now();
                 }
                 
+                // Phase 3: Ensure prestige fields exist (for backwards compatibility)
+                if (!this.gameState.prestige) {
+                    this.gameState.prestige = {
+                        prestigePoints: 0,
+                        totalPrestiges: 0,
+                        pathHistory: [],
+                        runStartTime: Date.now(),
+                        totalCashEarnedThisRun: this.gameState.resources.money,
+                        bonuses: {
+                            startingCash: 0,
+                            cashMultiplier: 0,
+                            locMultiplier: 0,
+                            credMultiplier: 0
+                        }
+                    };
+                }
+                
                 // Phase 2: Reset hint tracking on load
                 this.debtLowHintShown = false;
                 this.previousDebtState = this.gameState.techDebt < 0.1 ? 'low' : 'high';
@@ -421,6 +528,7 @@ class GameStore {
                 
                 if (this.passiveIncome > 0) {
                     this.gameState.resources.money += this.effectivePassiveIncome;
+                    this.trackCashEarned(this.effectivePassiveIncome);
                 }
                 
                 // Phase 2: Check for hints every game tick (with rate limiting)
@@ -485,6 +593,11 @@ class GameStore {
                 check: () => isDebtLow && !this.debtLowHintShown, 
                 condition: 'debtLow', 
                 message: 'Debt low - good time to save LoC' 
+            },
+            { 
+                check: () => this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT - 0.1, 
+                condition: 'prestigeSoon', 
+                message: 'Prestige available soon!' 
             }
         ];
         
@@ -519,12 +632,124 @@ class GameStore {
         const now = Date.now();
         this.hintCooldowns = new Set([...this.hintCooldowns].filter(c => c > now));
     }
+    
+    // Phase 3: Prestige system methods
+    openPrestigeConfirmation() {
+        this.pendingPrestigePoints = this.prestigePointsToEarn;
+        this.showPrestigeSummaryModal = true;
+    }
+    
+    closePrestigeConfirmation() {
+        this.showPrestigeSummaryModal = false;
+        this.pendingPrestigePoints = 0;
+    }
+    
+    selectPrestigePath(path: PrestigePath) {
+        this.selectedPrestigePath = path;
+        this.showPrestigeSummaryModal = false;
+        this.showPrestigeModal = true;
+    }
+    
+    closePrestigePathModal() {
+        this.showPrestigeModal = false;
+        this.selectedPrestigePath = null;
+    }
+    
+    performPrestige(path: PrestigePath) {
+        const pointsToEarn = this.pendingPrestigePoints;
+        
+        // Calculate bonuses based on path
+        const startingCash = (path === 'buyout')
+            ? pointsToEarn * PRESTIGE.STARTING_CASH_PER_POINT
+            : 0;
+        
+        const cashMultiplier = (path === 'buyout')
+            ? pointsToEarn * PRESTIGE.CASH_MULTIPLIER_PER_POINT
+            : 0;
+        
+        const locMultiplier = (path === 'nirvana')
+            ? pointsToEarn * PRESTIGE.LOC_MULTIPLIER_PER_POINT
+            : 0;
+        
+        const credMultiplier = (path === 'linus')
+            ? pointsToEarn * PRESTIGE.CRED_MULTIPLIER_PER_POINT
+            : 0;
+        
+        // Reset game state (preserve prestige data)
+        this.gameState.resources = { money: 0, loc: 0, cred: 0 };
+        this.gameState.upgrades = { vibeCode: {}, delegation: {} };
+        this.gameState.projects = { standard: {}, saas: {}, openSource: {} };
+        this.gameState.totalClicks = 0;
+        this.gameState.techDebt = 0;
+        this.gameState.projectsShipped = 0;
+        
+        // Apply starting cash bonus
+        this.gameState.resources.money = startingCash;
+        
+        // Update prestige state
+        if (!this.gameState.prestige) {
+            this.gameState.prestige = {
+                prestigePoints: 0,
+                totalPrestiges: 0,
+                pathHistory: [],
+                runStartTime: Date.now(),
+                totalCashEarnedThisRun: 0,
+                bonuses: {
+                    startingCash: 0,
+                    cashMultiplier: 0,
+                    locMultiplier: 0,
+                    credMultiplier: 0
+                }
+            };
+        }
+        
+        this.gameState.prestige.prestigePoints += pointsToEarn;
+        this.gameState.prestige.totalPrestiges += 1;
+        this.gameState.prestige.pathHistory.push(path);
+        this.gameState.prestige.runStartTime = Date.now();
+        this.gameState.prestige.totalCashEarnedThisRun = 0;
+        
+        // Accumulate bonuses (additive stacking)
+        this.gameState.prestige.bonuses.startingCash += startingCash;
+        this.gameState.prestige.bonuses.cashMultiplier += cashMultiplier;
+        this.gameState.prestige.bonuses.locMultiplier += locMultiplier;
+        this.gameState.prestige.bonuses.credMultiplier += credMultiplier;
+        
+        // Close modals and show notification
+        this.showPrestigeModal = false;
+        this.selectedPrestigePath = null;
+        this.pendingPrestigePoints = 0;
+        
+        this.showNotification(`PRESTIGE! +${pointsToEarn} prestige points! New run begins...`);
+    }
+    
+    // Track cash earned this run for prestige calculation
+    trackCashEarned(amount: number) {
+        if (this.gameState.prestige) {
+            this.gameState.prestige.totalCashEarnedThisRun += amount;
+        }
+    }
+    
+    // Hard reset that clears prestige data too
+    hardResetGame() {
+        if (confirm('Are you sure? This will wipe ALL progress including prestige!')) {
+            localStorage.removeItem('vibeCodeClicker');
+            this.gameState = { ...defaultState };
+            this.currentPrompt = PROMPT_MESSAGES[0];
+            this.floatTexts = [];
+            this.notifications = [];
+            this.hints = [];
+            this.debtLowHintShown = false;
+            this.previousDebtState = 'low';
+            this.showNotification('Full reset complete!');
+        }
+    }
 
     init() {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.3.2 initialized!');
+        console.log('Idle Vibe Code Quest v0.3.3 initialized!');
     }
 }
 

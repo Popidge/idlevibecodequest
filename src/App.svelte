@@ -11,6 +11,9 @@
     import OfflineGainsModal from './lib/components/OfflineGainsModal.svelte';
     // Phase 2: Hint system
     import HintsContainer from './lib/components/HintsContainer.svelte';
+    // Phase 3: Prestige modals
+    import PrestigeSummaryModal from './lib/components/PrestigeSummaryModal.svelte';
+    import PrestigePathModal from './lib/components/PrestigePathModal.svelte';
     import { store } from './lib/game/store.svelte';
 
     onMount(() => {
@@ -30,6 +33,9 @@
     <OfflineGainsModal />
     <!-- Phase 2: Hint system -->
     <HintsContainer />
+    <!-- Phase 3: Prestige modals -->
+    <PrestigeSummaryModal />
+    <PrestigePathModal />
 </div>
 
 <style>

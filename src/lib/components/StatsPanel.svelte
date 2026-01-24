@@ -96,6 +96,18 @@
                 />
             </div>
         {/if}
+        
+        <!-- Phase 3: Prestige section -->
+        {#if store.isPrestigeAvailable}
+            <div class="prestige-section">
+                <button class="prestige-btn" onclick={() => store.openPrestigeConfirmation()}>
+                    ✨ PRESTIGE AVAILABLE! ✨
+                </button>
+                <div class="prestige-info">
+                    <span class="prestige-points">+{store.prestigePointsToEarn} points</span>
+                </div>
+            </div>
+        {/if}
     </div>
     <div class="panel-footer">└─────────────────────────┘</div>
 </div>
@@ -262,5 +274,47 @@
         margin-bottom: 4px;
         text-transform: uppercase;
         letter-spacing: 1px;
+    }
+    
+    /* Phase 3: Prestige section */
+    .prestige-section {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--text-dim, #008800);
+    }
+    
+    .prestige-btn {
+        width: 100%;
+        background-color: var(--button-bg, #1a1a1a);
+        color: var(--text-amber, #ffb000);
+        border: 2px solid var(--text-amber, #ffb000);
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        animation: prestigeGlow 2s infinite;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    @keyframes prestigeGlow {
+        0%, 100% { box-shadow: 0 0 8px rgba(255, 176, 0, 0.5); }
+        50% { box-shadow: 0 0 16px rgba(255, 176, 0, 0.8); }
+    }
+    
+    .prestige-btn:hover {
+        background-color: var(--text-amber, #ffb000);
+        color: var(--panel-bg, #0f0f0f);
+    }
+    
+    .prestige-info {
+        text-align: center;
+        margin-top: 4px;
+    }
+    
+    .prestige-points {
+        color: var(--text-primary, #00ff00);
+        font-size: 12px;
     }
 </style>
