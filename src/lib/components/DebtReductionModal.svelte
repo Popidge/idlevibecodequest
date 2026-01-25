@@ -1,14 +1,19 @@
 <script lang="ts">
-    import { store, formatNumber } from '$lib/game/store.svelte';
-    import { TECH_DEBT } from '$lib/game/constants';
+    import { store, formatNumber, formatMoney } from '$lib/game/store.svelte';
+    import { TECH_DEBT, PROJECTS } from '$lib/game/constants';
     
-    let reductionAmount = $state(0.01);
+    // Reduction amount in debt level units (not percentage)
+    let reductionAmount = $state(TECH_DEBT.MIN_REDUCTION) as number; // Start with 1% (50 level units for MAX_LEVEL=5000)
     let paymentType = $state<'loc' | 'cash'>('loc');
     
-    // Calculate costs based on amount
-    const reductionUnits = $derived(reductionAmount / 0.01);
-    const locCost = $derived(Math.floor(reductionUnits * TECH_DEBT.REDUCTION_BASE_LOC_COST));
-    const cashCost = $derived(Math.floor(reductionUnits * TECH_DEBT.REDUCTION_BASE_CASH_COST));
+    // Calculate costs based on new formula: debt / 2 LoC
+    const locCost = $derived(Math.floor(reductionAmount / 2));
+    
+    // Cash cost: LoC cost × (cheapest project LoC cost / reward)
+    const cheapestProject = PROJECTS.standard[0]; // Todo App
+    const locValue = cheapestProject.locCost / cheapestProject.reward;
+    const cashCost = $derived(Math.floor(locCost * locValue));
+    
     const newDebt = $derived(Math.max(0, store.gameState.techDebt - reductionAmount));
     
     function handleReduce() {
@@ -33,12 +38,25 @@
         }
     }
     
-    // Quick select buttons
+    // Quick select buttons - use debt level units
     function selectAmount(amount: number) {
         reductionAmount = amount;
     }
     
-    const maxAmount = $derived(Math.max(TECH_DEBT.MIN_REDUCTION, store.gameState.techDebt));
+    // Format debt level as percentage (MAX_LEVEL=5000, so divide by 50)
+    function formatDebtLevel(debt: number): string {
+        return (debt / 50).toFixed(2) + '%';
+    }
+    
+    const maxAmount = $derived(store.gameState.techDebt);
+    
+    // Quick select options (in debt level units, MAX_LEVEL=5000)
+    const quickSelectOptions = [
+        { value: 50, label: '1%' },    // 50 level = 1%
+        { value: 250, label: '5%' },   // 250 level = 5%
+        { value: 500, label: '10%' },  // 500 level = 10%
+        { value: maxAmount, label: 'MAX' }
+    ];
 </script>
 
 {#if store.showDebtModal}
@@ -48,18 +66,22 @@
         <div class="modal-content" onclick={(e) => e.stopPropagation()}>
             <div class="modal-header">┌─ REDUCE TECH DEBT ───────┐</div>
             <div class="modal-body">
-                <p class="current-debt">Current Debt: <span class="debt-value">{store.debtPercentage}</span></p>
-                <p class="new-debt">After Reduction: <span class="debt-value new">{newDebt.toFixed(1)}%</span></p>
+                <p class="current-debt">Current Debt: <span class="debt-value">{store.debtPercentageDisplay}</span></p>
+                <p class="new-debt">After Reduction: <span class="debt-value new">{formatDebtLevel(newDebt)}</span></p>
                 
                 <div class="amount-section">
                     <span class="amount-label" id="amount-label">Reduction Amount:</span>
-                    <div class="amount-display" aria-labelledby="amount-label">{reductionAmount.toFixed(2)}%</div>
+                    <div class="amount-display" aria-labelledby="amount-label">{formatDebtLevel(reductionAmount)}</div>
                     
                     <div class="quick-select">
-                        <button onclick={() => selectAmount(0.01)} class:selected={reductionAmount === 0.01}>0.01</button>
-                        <button onclick={() => selectAmount(0.05)} class:selected={reductionAmount === 0.05}>0.05</button>
-                        <button onclick={() => selectAmount(0.10)} class:selected={reductionAmount === 0.10}>0.10</button>
-                        <button onclick={() => selectAmount(maxAmount)} class:selected={reductionAmount >= maxAmount && reductionAmount === store.gameState.techDebt}>MAX</button>
+                        {#each quickSelectOptions as option}
+                            <button 
+                                onclick={() => selectAmount(option.value)} 
+                                class:selected={reductionAmount === option.value}
+                            >
+                                {option.label}
+                            </button>
+                        {/each}
                     </div>
                     
                     <input 
@@ -99,6 +121,10 @@
                         </button>
                     </div>
                 </div>
+                
+                <p class="info-text">
+                    LoC cost: debt ÷ 2 | Cash cost based on Todo App value ({formatMoney(cheapestProject.reward)} for {cheapestProject.locCost} LoC)
+                </p>
             </div>
             <div class="modal-footer">
                 <button class="action-btn cancel" onclick={handleClose}>CANCEL</button>
@@ -284,6 +310,13 @@
     .payment-cost {
         font-size: 11px;
         color: var(--text-amber, #ffb000);
+    }
+    
+    .info-text {
+        font-size: 10px;
+        color: var(--text-dim, #008800);
+        margin: 12px 0 0;
+        text-align: center;
     }
     
     .action-btn {

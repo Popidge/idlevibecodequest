@@ -124,19 +124,14 @@ export const PROMPT_MESSAGES = [
     "Look, just 'get' the vibes and ship it to Vercel."
 ] as const;
 
-// Phase 1: Tech Debt System Constants
+// Phase 1: Tech Debt System Constants (Reworked for v0.5)
 export const TECH_DEBT = {
-    BASE_ACCUMULATION: 0.00008,          // Base debt per click (manual only)
-    PER_PROJECT: 0.00001,                // Additional debt per project shipped
-    DELEGATION_DEBT_RATE: 0.1,           // Delegation gains 0.1× single-click debt per second
-    MAX_DEBT: 0.5,                       // 50% maximum debt
-    REDUCTION_BASE_LOC_COST: 200,        // Base LoC cost per 0.01 debt
-    REDUCTION_LOC_MULTIPLIER: 4,         // LoC cost multiplier per project shipped
-    REDUCTION_BASE_CASH_COST: 1000,      // Base Cash cost per 0.01 debt
-    REDUCTION_CASH_MULTIPLIER: 20,       // Cash cost multiplier per project shipped
-    MIN_REDUCTION: 0.01,                 // Minimum debt reduction amount
-    WARNING_THRESHOLD: 0.1,              // Show warning and clear button when debt > 10%
-    OFFLINE_RATE: 0.1                    // 10% of normal rates while offline
+    MAX_LEVEL: 5000,                       // Max tech debt level (hard cap)
+    WARNING_THRESHOLD: 1000,               // Show clear button at 20%
+    DANGER_THRESHOLD: 4000,                // Show warning at 80%
+    BASE_ACCUMULATION: 1,                  // Base debt per LoC generated (before modifiers)
+    PRESTIGE_MODIFIER_PER_POINT: 0.01,     // Each prestige point reduces accumulation by 1%
+    MIN_REDUCTION: 50,                     // Minimum debt reduction amount (1% display)
 } as const;
 
 export type ProjectType = keyof typeof PROJECTS;
@@ -161,39 +156,33 @@ export const PRESTIGE = {
 // Phase 4: Tech Tree Constants
 export const TECH_TREE_COSTS = [1, 3, 5, 10, 15, 20, 25, 30, 35, 40] as const;
 
-// Helper type for tech tree node modifiers (non-readonly for easier iteration)
-type TechTreeNodeModifiers = {
-    startingCashFlat?: number;
-    moneyMultiplier?: number;
-    locMultiplier?: number;
-    credMultiplier?: number;
-    prestigePointMultiplier?: number;
-    locPerClickFlat?: number;
-    passiveLocRateFlat?: number;
-    credThresholdReduction?: number;
-    debtAccumulationReduction?: number;
-    debtPenaltyReduction?: number;
-    debtClearingEfficiency?: number;
-    unlockLegacyWhisperer?: boolean;
-    unlockCodeZen?: boolean;
-};
-
-// Interface for tech tree nodes with non-readonly modifiers
-interface TechTreeNode {
-    id: string;
-    name: string;
-    description: string;
-    cost: number;
-    modifiers: TechTreeNodeModifiers;
-}
-
+// Minimal TechTree interface for type casting
 interface TechTree {
     path: 'buyout' | 'nirvana' | 'linus' | 'learning';
     name: string;
     icon: string;
     color: string;
     description: string;
-    nodes: TechTreeNode[];
+    nodes: Array<{
+        id: string;
+        name: string;
+        description: string;
+        cost: number;
+        modifiers: {
+            startingCashFlat?: number;
+            moneyMultiplier?: number;
+            locMultiplier?: number;
+            credMultiplier?: number;
+            prestigePointMultiplier?: number;
+            locPerClickFlat?: number;
+            passiveLocRateFlat?: number;
+            credThresholdReduction?: number;
+            techTreeDebtMultiplier?: number;
+            unlockCodeZen?: boolean;
+            unlockLegacyWhisperer?: boolean;
+            prestigeDebtModifier?: number;
+        };
+    }>;
 }
 
 export const TECH_TREES = {
@@ -261,16 +250,16 @@ export const TECH_TREES = {
         color: '#ff00ff',
         description: 'Tech debt mastery',
         nodes: [
-            { id: 'read_the_docs', name: 'Read the Docs', description: '-5% debt accumulation', cost: 1, modifiers: { debtAccumulationReduction: 0.05 } },
-            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: '-10% debt accumulation', cost: 3, modifiers: { debtAccumulationReduction: 0.10 } },
-            { id: 'pair_programming', name: 'Pair Programming', description: '-15% debt penalty', cost: 5, modifiers: { debtPenaltyReduction: 0.15 } },
-            { id: 'code_review', name: 'Code Review', description: '-20% debt penalty', cost: 10, modifiers: { debtPenaltyReduction: 0.20 } },
-            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: '2× debt clearing efficiency', cost: 15, modifiers: { debtClearingEfficiency: 2.00 } },
-            { id: 'refactoring', name: 'Refactoring', description: '-25% debt accumulation', cost: 20, modifiers: { debtAccumulationReduction: 0.25 } },
-            { id: 'writing_tests', name: 'Writing Tests', description: '-30% debt penalty', cost: 25, modifiers: { debtPenaltyReduction: 0.30 } },
-            { id: 'architecture_patterns', name: 'Architecture Patterns', description: '3× debt clearing efficiency', cost: 30, modifiers: { debtClearingEfficiency: 3.00 } },
-            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Debt penalty becomes bonus at high levels', cost: 35, modifiers: { unlockLegacyWhisperer: true } },
-            { id: 'code_zen', name: 'Code Zen', description: 'Complete mastery over tech debt', cost: 40, modifiers: { unlockCodeZen: true } }
+            { id: 'read_the_docs', name: 'Read the Docs', description: 'Reduces debt accumulation by 10%', cost: 1, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: 'Reduces debt accumulation by 20%', cost: 2, modifiers: { techTreeDebtMultiplier: 0.2 } },
+            { id: 'pair_programming', name: 'Pair Programming', description: 'Reduces debt accumulation by 30%', cost: 3, modifiers: { techTreeDebtMultiplier: 0.3 } },
+            { id: 'code_review', name: 'Code Review', description: 'Reduces debt accumulation by 40%', cost: 4, modifiers: { techTreeDebtMultiplier: 0.4 } },
+            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: 'Reduces debt accumulation by 50%', cost: 5, modifiers: { techTreeDebtMultiplier: 0.5 } },
+            { id: 'refactoring', name: 'Refactoring', description: 'Reduces debt accumulation by 60%', cost: 6, modifiers: { techTreeDebtMultiplier: 0.6 } },
+            { id: 'writing_tests', name: 'Writing Tests', description: 'Reduces debt accumulation by 70%', cost: 7, modifiers: { techTreeDebtMultiplier: 0.7 } },
+            { id: 'architecture_patterns', name: 'Architecture Patterns', description: 'Reduces debt accumulation by 80%', cost: 8, modifiers: { techTreeDebtMultiplier: 0.8 } },
+            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Eliminates tech debt penalty (full income)', cost: 9, modifiers: { techTreeDebtMultiplier: 1.0 } },
+            { id: 'code_zen', name: 'Code Zen', description: 'Tech debt becomes a bonus instead of penalty', cost: 10, modifiers: { unlockCodeZen: true } }
         ]
     }
 } as unknown as { buyout: TechTree; nirvana: TechTree; linus: TechTree; learning: TechTree };

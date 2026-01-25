@@ -64,15 +64,9 @@
             parts.push(`+$${formatNumber(modifiers.startingCashFlat)}`);
         }
 
-        // Debt mechanics
-        if (modifiers.debtAccumulationReduction) {
-            parts.push(`-${(modifiers.debtAccumulationReduction * 100).toFixed(0)}% debt`);
-        }
-        if (modifiers.debtPenaltyReduction) {
-            parts.push(`-${(modifiers.debtPenaltyReduction * 100).toFixed(0)}% penalty`);
-        }
-        if (modifiers.debtClearingEfficiency && modifiers.debtClearingEfficiency !== 1) {
-            parts.push(`${modifiers.debtClearingEfficiency}× clearing`);
+        // Debt mechanics (Reworked v0.5)
+        if (modifiers.techTreeDebtMultiplier) {
+            parts.push(`-${(modifiers.techTreeDebtMultiplier * 100).toFixed(0)}% debt`);
         }
 
         // Cred threshold reduction

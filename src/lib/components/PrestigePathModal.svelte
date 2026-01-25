@@ -1,9 +1,7 @@
 <script lang="ts">
     import { store, formatNumber } from '$lib/game/store.svelte';
     import type { PrestigePath } from '$lib/game/types';
-    import { PRESTIGE } from '$lib/game/constants';
-    
-    const { DEBT_RELIEF_PER_POINT, DEBT_ACCUMULATION_REDUCTION, DEBT_PENALTY_REDUCTION } = PRESTIGE;
+    import { TECH_DEBT } from '$lib/game/constants';
     
     const paths = [
         {
@@ -116,16 +114,16 @@
                                     </div>
                                 {:else}
                                     <div class="bonus-row">
-                                        <span class="bonus-label">Debt Relief:</span>
-                                        <span class="bonus-value">-{(points * DEBT_RELIEF_PER_POINT * 100).toFixed(0)}%</span>
+                                        <span class="bonus-label">Debt Multiplier:</span>
+                                        <span class="bonus-value">-{formatMultiplier(mods.techTreeDebtMultiplier)}</span>
                                     </div>
                                     <div class="bonus-row">
-                                        <span class="bonus-label">Debt Reduction:</span>
-                                        <span class="bonus-value">-{formatMultiplier(points * DEBT_ACCUMULATION_REDUCTION)}</span>
+                                        <span class="bonus-label">Accumulation:</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row total">
-                                        <span class="bonus-label">Penalty Reduction:</span>
-                                        <span class="bonus-value">-{formatMultiplier(mods.debtPenaltyReduction + (points * DEBT_PENALTY_REDUCTION))}</span>
+                                        <span class="bonus-label">Total Relief:</span>
+                                        <span class="bonus-value">-{formatMultiplier(mods.techTreeDebtMultiplier + (points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT))}</span>
                                     </div>
                                 {/if}
                             </div>

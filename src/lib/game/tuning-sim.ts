@@ -107,11 +107,11 @@ export interface UpgradeCostInfo {
 export const defaultConfig: TuningConfig = {
     clickRate: 3, // 3 clicks per second (active play)
     
-    // Tech Debt defaults from constants
+    // Tech Debt defaults from constants (Reworked v0.5 - linear system)
     baseDebtPerClick: TECH_DEBT.BASE_ACCUMULATION,
-    debtPerProject: TECH_DEBT.PER_PROJECT,
-    delegationDebtRate: TECH_DEBT.DELEGATION_DEBT_RATE,
-    maxDebt: TECH_DEBT.MAX_DEBT,
+    debtPerProject: 0, // Removed in v0.5 rework - debt is now per-LoC only
+    delegationDebtRate: 1, // Multiplier for passive debt (1 = same as click)
+    maxDebt: TECH_DEBT.MAX_LEVEL,
     
     // Upgrade cost multiplier
     upgradeCostMultiplier: 1.15,
@@ -129,7 +129,7 @@ export const defaultConfig: TuningConfig = {
     techTreeCredMultiplier: 0,
     techTreeLocPerClickBonus: 0,
     techTreePassiveLocBonus: 0,
-    techTreeDebtAccumReduction: 0,
+    techTreeDebtAccumReduction: 0, // New: techTreeDebtMultiplier
     techTreeDebtPenaltyReduction: 0,
     techTreeDebtClearingEfficiency: 1,
     
@@ -259,8 +259,10 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         const passiveLocFlat = basePassiveLocRate * config.techTreePassiveLocBonus;
         const effectivePassiveLocRate = (basePassiveLocRate + passiveLocFlat) * effectiveLocMultiplier;
 
-        // Debt penalty factor
-        const debtPenaltyFactor = Math.pow(1 - state.techDebt, 2);
+        // Debt penalty factor (Reworked v0.5 - linear system)
+        const debtRatio = state.techDebt / config.maxDebt;
+        const treeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
+        const debtPenaltyFactor = Math.max(0.1, 1 - (debtRatio * treeMultiplier));
 
         // Effective cash multiplier
         const effectiveCashMultiplier = (1 + config.techTreeMoneyMultiplier) * (1 + config.techTreeLocMultiplier);
@@ -301,8 +303,9 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         state.resources.money += incomeFromPassive;
         state.totalCashEarned += incomeFromPassive;
 
-        // Tech debt from passive delegation
-        const debtPerSecond = config.baseDebtPerClick * config.delegationDebtRate * (1 - Math.min(config.techTreeDebtAccumReduction, 0.95));
+        // Tech debt from passive delegation (Reworked v0.5 - per-LoC system)
+        // Debt accumulates based on LoC generated, not time
+        const debtPerSecond = config.baseDebtPerClick * config.delegationDebtRate * (1 - Math.min(config.techTreeDebtAccumReduction, 1.0));
         state.techDebt = Math.min(state.techDebt + (debtPerSecond * dt), config.maxDebt);
 
         // ========================================
@@ -438,11 +441,15 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         }
     }
 
-    // Calculate final metrics
+    // Calculate final metrics (Reworked v0.5 - linear system)
     const finalClickPower = calculateClickPower(state, config);
     const finalPassiveLocRate = calculatePassiveLocRate(state, config);
     const finalPassiveIncome = calculatePassiveIncome(state, config);
-    const finalDebtPenaltyFactor = Math.pow(1 - state.techDebt, 2);
+    
+    // Final debt penalty factor - same formula as in simulation
+    const finalDebtRatio = state.techDebt / config.maxDebt;
+    const finalTreeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
+    const finalDebtPenaltyFactor = Math.max(0.1, 1 - (finalDebtRatio * finalTreeMultiplier));
 
     return {
         timeToFirstPrestige,
@@ -507,7 +514,11 @@ function calculatePassiveLocRate(state: SimulationState, config: TuningConfig): 
 
 function calculatePassiveIncome(state: SimulationState, config: TuningConfig): number {
     let basePassiveIncome = 0;
-    const debtPenaltyFactor = Math.pow(1 - state.techDebt, 2);
+    
+    // Debt penalty factor (Reworked v0.5 - linear system)
+    const debtRatio = state.techDebt / config.maxDebt;
+    const treeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
+    const debtPenaltyFactor = Math.max(0.1, 1 - (debtRatio * treeMultiplier));
     
     for (const [projectId, count] of state.projects.saas) {
         const project = PROJECTS.saas.find(p => p.id === projectId);
@@ -523,11 +534,12 @@ function calculatePassiveIncome(state: SimulationState, config: TuningConfig): n
 }
 
 function calculateDebtAtTime(state: SimulationState, targetTime: number, config: TuningConfig): number {
-    // Simplified debt calculation at a specific time
-    // Assumes average click rate and passive generation
+    // Simplified debt calculation at a specific time (Reworked v0.5 - linear system)
+    // Debt accumulates per-LoC generated, not per-project or per-time
     const clicksAtTarget = config.clickRate * targetTime;
     const passiveAtTarget = config.baseDebtPerClick * config.delegationDebtRate * targetTime;
-    const projectDebtAtTarget = state.projectsShipped * config.debtPerProject * targetTime;
+    // debtPerProject is 0 in v0.5 rework
+    const projectDebtAtTarget = 0;
     
     const totalDebt = (config.baseDebtPerClick * clicksAtTarget) + passiveAtTarget + projectDebtAtTarget;
     return Math.min(totalDebt, config.maxDebt);
@@ -597,14 +609,14 @@ export const tuningPresets: Record<string, TuningConfig> = {
     fast: {
         ...defaultConfig,
         clickRate: 8,
-        baseDebtPerClick: 0.00002,
+        baseDebtPerClick: 0.0001,
         upgradeCostMultiplier: 1.1,
         prestigeThresholdPercent: 0.6
     },
     slow: {
         ...defaultConfig,
         clickRate: 1,
-        baseDebtPerClick: 0.0002,
+        baseDebtPerClick: 0.001,
         upgradeCostMultiplier: 1.25,
         prestigeThresholdPercent: 0.8
     }

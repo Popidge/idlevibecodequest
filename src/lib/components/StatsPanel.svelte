@@ -11,19 +11,11 @@
         store.showDebtModal = true;
     }
     
-    // Better precision for debt display
-    function formatDebt(debt: number): string {
-        const percent = debt * 100;
-        if (percent < 1) {
-            return percent.toFixed(2) + '%';
-        }
-        return percent.toFixed(1) + '%';
-    }
-    
-    // Format progress bar label
     function formatProgressLabel(): string {
         if (!store.cheapestUpgrade) return '';
-        return `${formatMoney(store.gameState.resources.money)} / ${formatMoney(store.cheapestUpgrade.cost)}`;
+        const upgrade = store.cheapestUpgrade;
+        const typeName = upgrade.type === 'vibeCode' ? 'Vibe Code' : 'Delegation';
+        return `${typeName} L${upgrade.level}`;
     }
 </script>
 
@@ -48,14 +40,14 @@
         </div>
         <div class="stat-divider">┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</div>
         
-        <!-- Phase 1: Tech Debt Display -->
-        <div class="stat-row tech-debt-row" class:warning={store.isDebtWarning}>
+        <!-- Phase 1: Tech Debt Display (Reworked v0.5) -->
+        <div class="stat-row tech-debt-row" class:warning={store.isDebtWarning} class:danger={store.isDebtDanger}>
             <span class="stat-label">Tech Debt:</span>
             <div class="debt-container">
-                <span class="debt-value">{formatDebt(store.gameState.techDebt)}</span>
-                {#if store.gameState.techDebt > TECH_DEBT.WARNING_THRESHOLD}
+                <span class="debt-value">{store.debtPercentageDisplay}</span>
+                {#if store.gameState.techDebt > 0}
                     <span class="debt-multiplier" title="Income multiplier">
-                        (×{(Math.pow(1 - store.gameState.techDebt, 2) * 100).toFixed(0)}%)
+                        ×{(store.effectiveDebtPenaltyFactor * 100).toFixed(0)}%
                     </span>
                 {/if}
             </div>
@@ -222,13 +214,21 @@
         padding: 4px 0;
     }
     
-    .tech-debt-row.warning {
-        animation: pulse 1s infinite;
+    .tech-debt-row.danger {
+        animation: pulse 0.5s infinite;
     }
     
     @keyframes pulse {
         0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+        50% { opacity: 0.5; }
+    }
+    
+    .tech-debt-row.warning .debt-value {
+        color: var(--text-amber, #ffb000);
+    }
+    
+    .tech-debt-row.danger .debt-value {
+        color: #ff4444;
     }
     
     .debt-value {
@@ -256,6 +256,10 @@
         color: var(--text-amber, #ffb000);
     }
     
+    .tech-debt-row.danger .debt-value {
+        color: var(--text-red, #ff4444);
+    }
+    
     .clear-btn-container {
         display: flex;
         justify-content: flex-end;
@@ -274,6 +278,12 @@
         transition: all 0.15s ease;
         text-transform: uppercase;
         animation: blink 1s infinite;
+    }
+    
+    .tech-debt-row.danger .clear-btn {
+        color: #ff4444;
+        border-color: #ff4444;
+        animation: pulse 0.5s infinite;
     }
     
     @keyframes blink {

@@ -78,12 +78,13 @@ export interface PrestigeBonuses {
     totalCashMultiplier: number;
     totalLocMultiplier: number;
     totalCredMultiplier: number;
-    debtAccumulationReduction: number;
-    debtPenaltyMitigation: number;
-    debtClearingMultiplier: number;
     credThresholdReduction: number;
     prestigePointMultiplier: number;
     autoPurchaseThreshold: number;
+    // Legacy fields - no longer used but kept for migration
+    debtAccumulationReduction?: number;
+    debtPenaltyMitigation?: number;
+    debtClearingMultiplier?: number;
 }
 
 export interface PrestigeState {
@@ -128,14 +129,13 @@ export interface SystemModifiers {
     passiveLocRateFlat: number;     // Flat LoC/sec bonus (additive with base)
     credThresholdReduction: number; // Cred requirement reduction
 
-    // Debt Mechanics
-    debtAccumulationReduction: number; // e.g., 0.1 = -10% accumulation
-    debtPenaltyReduction: number;      // e.g., 0.1 = -10% penalty
-    debtClearingEfficiency: number;    // e.g., 2.0 = 2x efficiency
+    // Debt Mechanics (Reworked v0.5)
+    techTreeDebtMultiplier: number;        // 0-1 range from Learning tree nodes (accumulates from nodes)
+    prestigeDebtModifier: number;           // 0-1 range from prestige points
+    unlockCodeZen: boolean;                 // Inverts penalty to bonus
 
     // Special Flags (for boolean logic)
-    unlockLegacyWhisperer: boolean; // Debt penalty becomes bonus at high levels
-    unlockCodeZen: boolean;         // Complete mastery over tech debt
+    unlockLegacyWhisperer: boolean; // Legacy - no longer used, kept for compatibility
 }
 
 export interface TechTreeNode {

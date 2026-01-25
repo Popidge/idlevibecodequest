@@ -56,11 +56,11 @@ const defaultModifiers: SystemModifiers = {
     locPerClickFlat: 0,
     passiveLocRateFlat: 0,
     credThresholdReduction: 0,
-    debtAccumulationReduction: 0,
-    debtPenaltyReduction: 0,
-    debtClearingEfficiency: 1,
-    unlockLegacyWhisperer: false,
-    unlockCodeZen: false
+    // Debt Mechanics (Reworked v0.5)
+    techTreeDebtMultiplier: 0,
+    prestigeDebtModifier: 0,
+    unlockCodeZen: false,
+    unlockLegacyWhisperer: false
 };
 
 // Game state class with reactive properties
@@ -174,23 +174,43 @@ class GameStore {
     }
 
     // ========================================
-    // TECH DEBT Getters
+    // TECH DEBT Getters (Reworked v0.5)
     // ========================================
     
-    get debtPenaltyFactor() {
-        // Tech debt affects ONLY cash/cred income, NOT LoC generation
-        // Penalty: (1 - debt)²
-        return Math.pow(1 - this.gameState.techDebt, 2);
+    // Effective tech tree multiplier from Learning path nodes
+    get effectiveTechTreeMultiplier() {
+        return this.activeModifiers.techTreeDebtMultiplier;
     }
     
-    get debtAccumulationPerClick() {
-        // Base accumulation + per-project accumulation
-        return TECH_DEBT.BASE_ACCUMULATION + (this.gameState.projectsShipped * TECH_DEBT.PER_PROJECT);
+    // Effective prestige modifier from prestige points
+    get effectivePrestigeModifier() {
+        const points = this.gameState.prestige?.prestigePoints ?? 0;
+        return Math.min(points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT, 1.0);
     }
     
-    get debtAccumulationPerSecond() {
-        // Delegation gains: BASE × DELEGATION_DEBT_RATE per second
-        return TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE;
+    // Debt accumulation per LoC generated (applies to both active and passive)
+    get effectiveDebtAccumulationPerLoc() {
+        return TECH_DEBT.BASE_ACCUMULATION * (1 - this.effectivePrestigeModifier);
+    }
+    
+    // Get current debt level
+    get techDebtLevel() {
+        return this.gameState.techDebt;
+    }
+    
+    // Get debt as percentage for display (techDebt / 50 = percentage, since MAX_LEVEL=5000)
+    get debtPercentageDisplay() {
+        return (this.gameState.techDebt / 100).toFixed(2) + '%';
+    }
+    
+    // Check if debt is in warning zone (>= 20% / 1000)
+    get isDebtWarning() {
+        return this.gameState.techDebt >= TECH_DEBT.WARNING_THRESHOLD;
+    }
+    
+    // Check if debt is in danger zone (>= 80% / 4000)
+    get isDebtDanger() {
+        return this.gameState.techDebt >= TECH_DEBT.DANGER_THRESHOLD;
     }
 
     // ========================================
@@ -262,52 +282,31 @@ class GameStore {
     }
     
     // ========================================
-    // DEBT PENALTY FACTOR with Code Zen/Legacy Whisperer
+    // DEBT PENALTY FACTOR (Reworked v0.5)
     // ========================================
     
     get effectiveDebtPenaltyFactor() {
         const mods = this.activeModifiers;
-        const basePenalty = Math.pow(1 - this.gameState.techDebt, 2);
+        const debtRatio = this.gameState.techDebt / TECH_DEBT.MAX_LEVEL;
         
         // PRIORITY 1: Code Zen
-        // Inverts the CURRENT penalty - High Debt = High Bonus
-        // If Debt is 0.5 → basePenalty is 0.25 → Result is 4.0x multiplier
+        // Inverts the penalty - High Debt = High Bonus
+        // Formula: 1 + [(debtRatio / 2) * (1 - treeMultiplier)]
         if (mods.unlockCodeZen) {
-            // Clamp basePenalty to avoid division by zero (if debt is 1.0)
-            const safePenalty = Math.max(0.01, basePenalty);
-            return 1.0 / safePenalty;
+            const treeMod = 1 - (mods.techTreeDebtMultiplier ?? 0);
+            return 1 + ((debtRatio / 2) * treeMod);
         }
-
-        // PRIORITY 2: Legacy Whisperer
-        // Prevents all tech debt penalty (full income at any debt)
-        if (mods.unlockLegacyWhisperer) {
-            return 1.0;
-        }
-
-        // STANDARD: Apply debtPenaltyReduction to mitigate the penalty
-        const mitigation = mods.debtPenaltyReduction;
-        return Math.max(0.1, basePenalty + (1 - basePenalty) * mitigation);
+        
+        // STANDARD: Apply tree multiplier to reduce penalty
+        // Formula: 1 - [(debtRatio / 2) * (1 - treeMultiplier)]
+        // At MAX_LEVEL (5000) with no tree modifier: 1 - (0.5 * 1) = 0.5, capped at 0.5 as a defensive
+        const treeMod = 1 - (mods.techTreeDebtMultiplier ?? 0);
+        return Math.max(0.5, (1 - ((debtRatio / 2) * treeMod)));
     }
 
     // ========================================
     // OTHER DERIVED VALUES
     // ========================================
-
-    get effectiveDebtAccumulationPerClick() {
-        const base = TECH_DEBT.BASE_ACCUMULATION + (this.gameState.projectsShipped * TECH_DEBT.PER_PROJECT);
-        const reduction = this.activeModifiers.debtAccumulationReduction;
-        return base * (1 - Math.min(reduction, 0.95)); // Cap at 95% reduction
-    }
-
-    get effectiveDebtAccumulationPerSecond() {
-        const base = TECH_DEBT.BASE_ACCUMULATION * TECH_DEBT.DELEGATION_DEBT_RATE;
-        const reduction = this.activeModifiers.debtAccumulationReduction;
-        return base * (1 - Math.min(reduction, 0.95));
-    }
-
-    get effectiveDebtClearingEfficiency() {
-        return this.activeModifiers.debtClearingEfficiency;
-    }
 
     get effectiveCredThresholdReduction() {
         return this.activeModifiers.credThresholdReduction;
@@ -323,15 +322,6 @@ class GameStore {
         const base = 1;
         const techTreeBonus = this.activeModifiers.prestigePointMultiplier;
         return base + techTreeBonus;
-    }
-
-    get debtPercentage() {
-        return (this.gameState.techDebt * 100).toFixed(1) + '%';
-    }
-    
-    // Check if debt is in warning zone (>10%)
-    get isDebtWarning() {
-        return this.gameState.techDebt > TECH_DEBT.WARNING_THRESHOLD;
     }
     
     // Phase 2: Find cheapest purchasable upgrade
@@ -506,19 +496,12 @@ class GameStore {
     // ACTIONS
     // ========================================
 
-    // Phase 1: Accumulate tech debt from clicks
-    accumulateDebtFromClick() {
+    // Accumulate tech debt from LoC generated (active or passive)
+    accumulateDebt(locGenerated: number) {
+        const debtToAdd = locGenerated * this.effectiveDebtAccumulationPerLoc;
         this.gameState.techDebt = Math.min(
-            this.gameState.techDebt + this.effectiveDebtAccumulationPerClick,
-            TECH_DEBT.MAX_DEBT
-        );
-    }
-
-    // Phase 1: Accumulate tech debt from passive generation
-    accumulateDebtFromPassive() {
-        this.gameState.techDebt = Math.min(
-            this.gameState.techDebt + this.effectiveDebtAccumulationPerSecond,
-            TECH_DEBT.MAX_DEBT
+            this.gameState.techDebt + debtToAdd,
+            TECH_DEBT.MAX_LEVEL
         );
     }
 
@@ -528,7 +511,7 @@ class GameStore {
         this.gameState.totalClicks++;
         
         // Accumulate tech debt from click
-        this.accumulateDebtFromClick();
+        this.accumulateDebt(locGained);
         
         this.addFloatText(event.clientX, event.clientY, `+${formatNumber(locGained)} LoC`);
         this.currentPrompt = PROMPT_MESSAGES[Math.floor(Math.random() * PROMPT_MESSAGES.length)];
@@ -612,21 +595,22 @@ class GameStore {
         this.showNotification('DEBUG: +1000 Cred, +$1000M, +1M LoC, +500 PP');
     }
     
-    // Phase 1: Debt Reduction with scaling costs based on projects shipped
+    // Phase 1: Debt Reduction (Reworked v0.5)
+    // LoC Cost: debt / 2
+    // Cash Cost: calculated based on cheapest project's LoC value
     reduceDebt(amount: number, paymentType: 'loc' | 'cash') {
         if (amount <= 0 || amount > this.gameState.techDebt) {
             this.showNotification('Invalid debt reduction amount!');
             return false;
         }
         
-        const reductionUnits = amount / 0.01;
-        const locCostPerUnit = TECH_DEBT.REDUCTION_BASE_LOC_COST + 
-            (this.gameState.projectsShipped * TECH_DEBT.REDUCTION_LOC_MULTIPLIER);
-        const cashCostPerUnit = TECH_DEBT.REDUCTION_BASE_CASH_COST + 
-            (this.gameState.projectsShipped * TECH_DEBT.REDUCTION_CASH_MULTIPLIER);
+        // LoC cost: debtAmount / 2
+        const locCost = Math.floor(amount / 2);
         
-        const locCost = Math.floor(reductionUnits * locCostPerUnit);
-        const cashCost = Math.floor(reductionUnits * cashCostPerUnit);
+        // Cash cost: LoC cost × (cheapest project LoC cost / reward)
+        const cheapestProject = PROJECTS.standard[0]; // Todo App
+        const locValue = cheapestProject.locCost / cheapestProject.reward;
+        const cashCost = Math.floor(locCost * locValue);
         
         if (paymentType === 'loc') {
             if (this.gameState.resources.loc < locCost) {
@@ -642,15 +626,13 @@ class GameStore {
             this.gameState.resources.money -= cashCost;
         }
         
-        // Apply debt clearing efficiency modifier
-        const effectiveAmount = amount * this.effectiveDebtClearingEfficiency;
-        this.gameState.techDebt = Math.max(0, this.gameState.techDebt - effectiveAmount);
+        this.gameState.techDebt = Math.max(0, this.gameState.techDebt - amount);
         
-        this.showNotification(`Reduced tech debt by ${(effectiveAmount * 100).toFixed(1)}%`);
+        this.showNotification(`Reduced tech debt by ${(amount / 100).toFixed(2)}%`);
         return true;
     }
     
-    // Phase 1: Calculate offline gains
+    // Phase 1: Calculate offline gains (simplified for v0.5)
     calculateOfflineGains(): OfflineGains {
         const now = Date.now();
         const lastSave = this.gameState.lastSaveTime;
@@ -662,9 +644,9 @@ class GameStore {
         
         const hoursOffline = timeDiff / (1000 * 60 * 60);
         
-        // Offline rate is 10% of normal passive rates
-        const offlineLocRate = this.basePassiveLocRate * TECH_DEBT.OFFLINE_RATE;
-        const offlineCashRate = this.effectivePassiveIncome * TECH_DEBT.OFFLINE_RATE;
+        // Offline: 10% of passive rates
+        const offlineLocRate = this.basePassiveLocRate * 0.1;
+        const offlineCashRate = this.basePassiveIncome * 0.1 * this.effectiveDebtPenaltyFactor;
         
         const locGained = Math.floor(offlineLocRate * hoursOffline * 3600);
         const cashGained = Math.floor(offlineCashRate * hoursOffline * 3600);
@@ -694,6 +676,7 @@ class GameStore {
         this.showNotification('Game saved!');
     }
 
+    // Load game with migration support for tech debt scale change
     loadGame() {
         const savedData = localStorage.getItem('vibeCodeClicker');
         console.log('Loading game, found data:', !!savedData);
@@ -722,7 +705,11 @@ class GameStore {
                 
                 // Phase 2: Reset hint tracking on load
                 this.debtLowHintShown = false;
-                this.previousDebtState = this.gameState.techDebt < 0.1 ? 'low' : 'high';
+                // Migration: convert old 0-0.5 scale to new 0-5000 scale
+                if (typeof this.gameState.techDebt === 'number' && this.gameState.techDebt <= 0.5) {
+                    this.gameState.techDebt = this.gameState.techDebt * 10000;
+                }
+                this.previousDebtState = this.gameState.techDebt < 1000 ? 'low' : 'high';
                 
                 // Phase 1: Calculate offline gains
                 const gains = this.calculateOfflineGains();
@@ -764,8 +751,9 @@ class GameStore {
         $effect(() => {
             const interval = setInterval(() => {
                 if (this.effectivePassiveLocRate > 0) {
-                    this.gameState.resources.loc += this.effectivePassiveLocRate;
-                    this.accumulateDebtFromPassive();
+                    const locGenerated = this.effectivePassiveLocRate;
+                    this.gameState.resources.loc += locGenerated;
+                    this.accumulateDebt(locGenerated);
                 }
                 
                 if (this.basePassiveIncome > 0) {
@@ -842,11 +830,11 @@ class GameStore {
         }
     }
     
-    // Phase 2: Hint system - Check conditions and add hints
+    // Phase 2: Hint system - Check conditions and add hints (Reworked v0.5)
     private checkAndAddHints() {
         const now = Date.now();
 
-        const isDebtLow = this.gameState.techDebt < 0.1;
+        const isDebtLow = this.gameState.techDebt < 1000;
         const currentState = isDebtLow ? 'low' : 'high';
 
         if (this.previousDebtState === 'high' && currentState === 'low') {
@@ -856,7 +844,7 @@ class GameStore {
 
         const conditions: { check: () => boolean; condition: Hint['condition']; message: string; useNotification?: boolean; cooldownMinutes?: number }[] = [
             {
-                check: () => this.gameState.techDebt > 0.4,
+                check: () => this.gameState.techDebt >= TECH_DEBT.DANGER_THRESHOLD,
                 condition: 'debtHigh',
                 message: 'Tech debt high - consider clearing!'
             },
@@ -941,15 +929,9 @@ class GameStore {
     performPrestige(path: PrestigePath) {
         const pointsToEarn = this.pendingPrestigePoints;
 
-        // Calculate path-specific bonuses (these are applied via tech tree nodes in future)
-        // For now, we calculate starting cash and debt relief immediately
+        // Calculate starting cash (buyout path)
         const startingCash = (path === 'buyout')
             ? pointsToEarn * PRESTIGE.STARTING_CASH_PER_POINT
-            : 0;
-
-        // Learning path bonuses (tech debt mitigation)
-        const debtRelief = (path === 'learning')
-            ? pointsToEarn * PRESTIGE.DEBT_RELIEF_PER_POINT
             : 0;
 
         // Preserve existing tech trees
@@ -965,7 +947,7 @@ class GameStore {
         this.gameState.upgrades = { vibeCode: {}, delegation: {} };
         this.gameState.projects = { standard: {}, saas: {}, openSource: {} };
         this.gameState.totalClicks = 0;
-        this.gameState.techDebt = Math.max(0, this.gameState.techDebt - debtRelief); // Apply debt relief
+        this.gameState.techDebt = 0; // Reset debt on prestige
         this.gameState.projectsShipped = 0;
 
         // Apply starting cash bonus (from prestige path + accumulated tech tree bonuses)
