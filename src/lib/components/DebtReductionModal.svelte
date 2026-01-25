@@ -43,9 +43,9 @@
         reductionAmount = amount;
     }
     
-    // Format debt level as percentage (MAX_LEVEL=5000, so divide by 50)
+    // Format debt level as percentage (MAX_LEVEL=5000, caps at 50%)
     function formatDebtLevel(debt: number): string {
-        return (debt / 50).toFixed(2) + '%';
+        return (debt / 100).toFixed(2) + '%';
     }
     
     const maxAmount = $derived(store.gameState.techDebt);
