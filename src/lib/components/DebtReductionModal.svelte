@@ -48,20 +48,19 @@
         return (debt / 100).toFixed(2) + '%';
     }
     
-    const maxAmount = $derived(store.gameState.techDebt);
-    
     // Quick select options (in debt level units, MAX_LEVEL=5000)
-    const quickSelectOptions = [
+    const quickSelectOptions = $derived([
         { value: 50, label: '1%' },    // 50 level = 1%
         { value: 250, label: '5%' },   // 250 level = 5%
         { value: 500, label: '10%' },  // 500 level = 10%
-        { value: maxAmount, label: 'MAX' }
-    ];
+        { value: store.gameState.techDebt, label: 'MAX' }
+    ]);
 </script>
 
 {#if store.showDebtModal}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_interactive_supports_focus -->
     <div class="modal-backdrop" onclick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Reduce Tech Debt">
         <div class="modal-content" onclick={(e) => e.stopPropagation()}>
             <div class="modal-header">┌─ REDUCE TECH DEBT ───────┐</div>

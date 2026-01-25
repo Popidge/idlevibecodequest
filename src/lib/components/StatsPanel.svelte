@@ -54,7 +54,7 @@
         </div>
         {#if store.isDebtWarning}
             <div class="clear-btn-container">
-                <button class="clear-btn" onclick={openDebtModal}>CLEAR</button>
+                <button class="clear-btn" class:danger={store.isDebtDanger} onclick={openDebtModal}>CLEAR</button>
             </div>
         {/if}
         
@@ -252,14 +252,6 @@
         white-space: nowrap;
     }
     
-    .tech-debt-row.warning .debt-value {
-        color: var(--text-amber, #ffb000);
-    }
-    
-    .tech-debt-row.danger .debt-value {
-        color: var(--text-red, #ff4444);
-    }
-    
     .clear-btn-container {
         display: flex;
         justify-content: flex-end;
@@ -280,7 +272,7 @@
         animation: blink 1s infinite;
     }
     
-    .tech-debt-row.danger .clear-btn {
+    .clear-btn.danger {
         color: #ff4444;
         border-color: #ff4444;
         animation: pulse 0.5s infinite;
