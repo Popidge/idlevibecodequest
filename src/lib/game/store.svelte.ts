@@ -1,7 +1,7 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
 import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers } from './types';
+import type { GameState, FloatText, Notification, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
 
 // Default game state
@@ -71,7 +71,10 @@ class GameStore {
     notifications = $state<Notification[]>([]);
     notificationId = 0;
     floatTextId = 0;
-    
+
+    // Unified notification queue for NotificationBar
+    notificationQueue = $state<QueuedNotification[]>([]);
+
     // Phase 1: Offline gains modal state
     offlineGains = $state<OfflineGains | null>(null);
     showOfflineModal = $state(false);
@@ -744,6 +747,7 @@ class GameStore {
             this.hints = [];
             this.debtLowHintShown = false;
             this.previousDebtState = 'low';
+            this.notificationQueue = []; // Clear notification queue on reset
             this.showNotification('Game reset!');
         }
     }
@@ -806,48 +810,87 @@ class GameStore {
         }, 1000);
     }
 
-    private showNotification(message: string) {
-        const id = this.notificationId++;
-        this.notifications.push({ id, message });
-        
+    private showNotification(message: string, type: 'success' | 'warning' | 'info' = 'info') {
+        // Route notification based on content
+        const lowerMessage = message.toLowerCase();
+
+        // Determine category based on content
+        const category = lowerMessage.includes('saved') ||
+                         lowerMessage.includes('prestige') ||
+                         lowerMessage.includes('debt') ||
+                         lowerMessage.includes('reset') ? 'footer' : 'title';
+
+        // Add to unified notification queue
+        const notification: QueuedNotification = {
+            id: this.notificationId++,
+            message,
+            type,
+            category,
+            timestamp: Date.now()
+        };
+
+        this.notificationQueue.push(notification);
+
+        // Auto-remove after 3 seconds
         setTimeout(() => {
-            this.notifications = this.notifications.filter(n => n.id !== id);
-        }, 2000);
+            this.notificationQueue = this.notificationQueue.filter(n => n.id !== notification.id);
+        }, 3000);
+
+        // Keep queue trimmed to last 5 notifications
+        if (this.notificationQueue.length > 5) {
+            this.notificationQueue = this.notificationQueue.slice(-5);
+        }
     }
     
     // Phase 2: Hint system - Check conditions and add hints
     private checkAndAddHints() {
         const now = Date.now();
-        
+
         const isDebtLow = this.gameState.techDebt < 0.1;
         const currentState = isDebtLow ? 'low' : 'high';
-        
+
         if (this.previousDebtState === 'high' && currentState === 'low') {
             this.debtLowHintShown = false;
         }
         this.previousDebtState = currentState;
-        
-        const conditions: { check: () => boolean; condition: Hint['condition']; message: string }[] = [
-            { 
-                check: () => this.gameState.techDebt > 0.4, 
-                condition: 'debtHigh', 
-                message: 'Tech debt high - consider clearing!' 
+
+        const conditions: { check: () => boolean; condition: Hint['condition']; message: string; useNotification?: boolean; cooldownMinutes?: number }[] = [
+            {
+                check: () => this.gameState.techDebt > 0.4,
+                condition: 'debtHigh',
+                message: 'Tech debt high - consider clearing!'
             },
-            { 
-                check: () => isDebtLow && !this.debtLowHintShown, 
-                condition: 'debtLow', 
-                message: 'Debt low - good time to save LoC' 
+            {
+                check: () => isDebtLow && !this.debtLowHintShown,
+                condition: 'debtLow',
+                message: 'Debt low - good time to save LoC',
+                useNotification: true,
+                cooldownMinutes: 5
             },
-            { 
-                check: () => this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT - 0.1, 
-                condition: 'prestigeSoon', 
-                message: 'Prestige available soon!' 
+            {
+                // Only show if prestige is NOT yet available (button will show when available)
+                check: () => !this.isPrestigeAvailable && this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT - 0.1,
+                condition: 'prestigeSoon',
+                message: 'Prestige available soon!',
+                useNotification: true,
+                cooldownMinutes: 10
             }
         ];
-        
-        for (const { check, condition, message } of conditions) {
+
+        for (const { check, condition, message, useNotification, cooldownMinutes = 1 } of conditions) {
             if (check() && !this.hints.some(h => h.condition === condition)) {
-                this.addHint(message, condition);
+                // Check if we've shown a similar notification recently (throttle)
+                const recentNotification = this.notificationQueue.find(
+                    n => n.message.toLowerCase().includes(message.toLowerCase().split(' ').slice(0, 2).join(' '))
+                );
+                if (recentNotification) continue;
+
+                // Route debt low and prestige hints through notification queue
+                if (useNotification) {
+                    this.showNotification(message, 'success');
+                } else {
+                    this.addHint(message, condition);
+                }
                 if (condition === 'debtLow') {
                     this.debtLowHintShown = true;
                 }
@@ -955,6 +998,8 @@ class GameStore {
         this.selectedPrestigePath = null;
         this.pendingPrestigePoints = 0;
 
+        // Clear notification queue on prestige so hints can appear in new run
+        this.notificationQueue = [];
         this.showNotification(`PRESTIGE! +${pointsToEarn} prestige points! New run begins...`);
     }
     
@@ -976,6 +1021,7 @@ class GameStore {
             this.hints = [];
             this.debtLowHintShown = false;
             this.previousDebtState = 'low';
+            this.notificationQueue = []; // Clear notification queue on hard reset
             this.showNotification('Full reset complete!');
         }
     }
@@ -997,7 +1043,7 @@ class GameStore {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.3.5 initialized!');
+        console.log('Idle Vibe Code Quest v0.4 initialized!');
     }
 }
 

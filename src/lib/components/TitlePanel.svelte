@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { store } from '$lib/game/store.svelte';
+    // TitlePanel - Just displays the ASCII title card
+    // All notifications moved to NotificationBar component
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">┌─ idle-vibe-code v0.3.5 ─┐</div>
+    <div class="panel-header">┌─ idle-vibe-code v0.4 ────┐</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗
@@ -16,17 +17,7 @@
 ╚══════════╝
         </pre>
     </div>
-    <div class="panel-footer title-footer">
-        <span class="prestige-display">
-            {#if store.gameState.prestige?.prestigePoints}
-                ⭐ {store.gameState.prestige.prestigePoints} pts
-            {:else}
-                ⭐ 0 pts
-            {/if}
-        </span>
-        <button class="window-btn" onclick={() => store.saveGame()}>[ SAVE ]</button>
-        <button class="window-btn" onclick={() => store.resetGame()}>[ RESET ]</button>
-    </div>
+    <div class="panel-footer">└──────────────────────────┘</div>
 </div>
 
 <style>
@@ -78,35 +69,5 @@
         white-space: pre;
         padding: 4px 0;
         flex-shrink: 0;
-    }
-
-    .title-footer {
-        display: flex;
-        gap: 5px;
-        justify-content: center;
-        padding: 8px !important;
-        border: none !important;
-    }
-
-    .window-btn {
-        background-color: var(--button-bg, #1a1a1a);
-        color: var(--text-primary, #00ff00);
-        border: 1px solid var(--border-color, #00ff00);
-        padding: 4px 10px;
-        font-family: 'Courier New', monospace;
-        font-size: 10px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .window-btn:hover {
-        background-color: var(--button-hover, #2a2a2a);
-        box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
-    }
-    
-    .prestige-display {
-        color: var(--text-amber, #ffb000);
-        font-size: 10px;
-        margin-right: 8px;
     }
 </style>

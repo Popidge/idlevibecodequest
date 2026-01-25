@@ -42,6 +42,15 @@ export interface Notification {
     message: string;
 }
 
+// Queued notification for NotificationBar - includes metadata for display
+export interface QueuedNotification {
+    id: number;
+    message: string;
+    type: 'success' | 'warning' | 'info';
+    category: 'footer' | 'title';
+    timestamp: number;
+}
+
 export interface OfflineGains {
     loc: number;
     cash: number;

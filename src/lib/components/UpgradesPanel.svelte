@@ -135,7 +135,7 @@
         border: 1px solid transparent;
         padding: 4px 12px;
         font-family: 'Courier New', monospace;
-        font-size: 11px;
+        font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -221,21 +221,21 @@
 
     .item-cost {
         color: var(--text-amber, #ffb000);
-        font-size: 11px;
+        font-size: 12px;
         white-space: nowrap;
         flex: 0 0 auto;
     }
 
     .item-reward {
         color: var(--text-secondary, #00cc00);
-        font-size: 10px;
+        font-size: 12px;
         white-space: nowrap;
         flex: 0 0 auto;
     }
 
     .item-locked-text {
         color: var(--text-amber, #ffb000);
-        font-size: 10px;
+        font-size: 12px;
         font-weight: bold;
     }
 

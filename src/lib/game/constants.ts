@@ -89,16 +89,39 @@ export const UNLOCKS = {
 } as const;
 
 export const PROMPT_MESSAGES = [
-    "Write me a todo app...",
-    "Generate a weather widget...",
-    "Create a login form...",
-    "Build a dashboard...",
-    "Design a landing page...",
-    "Code a chat interface...",
-    "Implement user auth...",
-    "Set up a database...",
-    "Write API endpoints...",
-    "Deploy to production..."
+    // The "I don't actually want to code" category
+    "Just fix the bug, you know the one, don't ask questions...",
+    "Ultrathink the state management, make it 'flow'.",
+    "Why can't my bro Chet access localhost:8000 on his MacBook Pro?",
+    "I'm not in the mood to write CSS, just make it look like Stripe.",
+    "Rewrite the entire backend in Rust, I heard it's faster.",
+    "Make the 'Submit' button feel more 'agentic'.",
+    
+    // The "Buzzword Soup" category
+    "Pivot to a decentralized AI-driven coconut water ecosystem.",
+    "Implement a RAG pipeline for my personal collection of memes.",
+    "Add an O1 reasoning loop to my static portfolio site.",
+    "Can we put the blockchain in the middle of this div?",
+    "Generate a Series-A-ready MVP by tomorrow morning.",
+    
+    // The "LLM Misery" category
+    "As an AI language model, I cannot help you with your bad variable names.",
+    "I'm sorry, I cannot fulfill this request because it's Friday afternoon.",
+    "Wait, let me think about that for 45 seconds... actually, never mind.",
+    "Explain why I should put non-toxic glue on my pizza to stop the cheese sliding off.",
+    "Just add more 'Vibe' to the header, it's too 'Code' right now.",
+    
+    // The "British Dev" category
+    "Kettle's boiled. While I have a brew, refactor the legacy monolith.",
+    "The client wants a 'disruptive' login form, I'm going to the pub.",
+    "Southern Rail is delayed again, automate my entire job from my phone.",
+    "It’s raining, write me a weather app that only shows 'Grey'.",
+    
+    // The "Desperate" category
+    "Fix the red squiggles. All of them. Now.",
+    "I don't care about the context window, just remember everything forever.",
+    "I ran out of credits, please finish this function for free...",
+    "Look, just 'get' the vibes and ship it to Vercel."
 ] as const;
 
 // Phase 1: Tech Debt System Constants

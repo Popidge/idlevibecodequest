@@ -5,7 +5,6 @@
         formatMoney
     } from '$lib/game/store.svelte';
     import { TECH_DEBT } from '$lib/game/constants';
-    import { isDebugMode } from '$lib/env';
     import ProgressBar from './ProgressBar.svelte';
 
     function openDebtModal() {
@@ -29,7 +28,7 @@
 </script>
 
 <div class="panel stats-panel">
-    <div class="panel-header">┌─ STATS ───────────────┐</div>
+    <div class="panel-header">┌─ STATS ──────────────────┐</div>
     <div class="panel-content stats-content">
         <div class="stat-row">
             <span class="stat-label">Money:</span>
@@ -108,52 +107,27 @@
         {#if store.cheapestUpgrade}
             <div class="progress-section">
                 <div class="progress-label">Next Upgrade:</div>
-                <ProgressBar 
-                    current={store.gameState.resources.money} 
-                    max={store.cheapestUpgrade.cost} 
+                <ProgressBar
+                    current={store.gameState.resources.money}
+                    max={store.cheapestUpgrade.cost}
                     label={formatProgressLabel()}
                 />
             </div>
         {/if}
-        
-        <!-- Phase 3: Prestige section -->
-        {#if store.isPrestigeAvailable}
-            <div class="prestige-section">
-                <button class="prestige-btn" onclick={() => store.openPrestigeConfirmation()}>
-                    ✨ PRESTIGE AVAILABLE! ✨
-                </button>
-                <div class="prestige-info">
-                    <span class="prestige-points">+{store.prestigePointsToEarn} points</span>
-                </div>
-            </div>
-        {/if}
 
-        <!-- Phase 4: Tech Tree section (always visible if player has prestige points) -->
-        {#if (store.totalPrestigePoints > 0) || (store.gameState.prestige?.totalPrestiges ?? 0) > 0}
-            <div class="tech-tree-section">
-                <button class="tech-tree-btn" onclick={() => store.openTechTree()}>
-                    🌳 TECH TREE
-                </button>
-                <div class="tech-tree-info">
-                    <span class="tech-tree-points">⭐ {store.totalPrestigePoints} points</span>
-                </div>
+        <!-- Prestige Points Summary -->
+        <div class="prestige-summary">
+            <div class="prestige-summary-label">TOTAL PRESTIGE POINTS</div>
+            <div class="prestige-summary-value">
+                <span class="star">⭐</span>
+                <span class="points">{store.totalPrestigePoints}</span>
+                <span class="details">
+                    ({store.gameState.prestige?.totalPrestiges ?? 0} prestiges)
+                </span>
             </div>
-        {/if}
-
-        <!-- Debug mode section -->
-        {#if isDebugMode()}
-            <div class="debug-section">
-                <div class="debug-header">DEBUG MODE</div>
-                <button class="debug-btn" onclick={() => store.grantDebugResources()}>
-                    🐛 GET RESOURCES
-                </button>
-                <div class="debug-info">
-                    +1000 Cred, +$1000M, +1M LoC
-                </div>
-            </div>
-        {/if}
+        </div>
     </div>
-    <div class="panel-footer">└─────────────────────────┘</div>
+    <div class="panel-footer">└──────────────────────────┘</div>
 </div>
 
 <style>
@@ -319,7 +293,7 @@
         padding-top: 8px;
         border-top: 1px dashed var(--text-dim, #008800);
     }
-    
+
     .progress-label {
         color: var(--text-dim, #008800);
         font-size: 10px;
@@ -327,124 +301,42 @@
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
-    /* Phase 3: Prestige section */
-    .prestige-section {
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px dashed var(--text-dim, #008800);
-    }
-    
-    .prestige-btn {
-        width: 100%;
-        background-color: var(--button-bg, #1a1a1a);
-        color: var(--text-amber, #ffb000);
-        border: 2px solid var(--text-amber, #ffb000);
-        padding: 8px 12px;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        font-weight: bold;
-        cursor: pointer;
-        animation: prestigeGlow 2s infinite;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    @keyframes prestigeGlow {
-        0%, 100% { box-shadow: 0 0 8px rgba(255, 176, 0, 0.5); }
-        50% { box-shadow: 0 0 16px rgba(255, 176, 0, 0.8); }
-    }
-    
-    .prestige-btn:hover {
-        background-color: var(--text-amber, #ffb000);
-        color: var(--panel-bg, #0f0f0f);
-    }
-    
-    .prestige-info {
-        text-align: center;
-        margin-top: 4px;
-    }
 
-    .prestige-points {
-        color: var(--text-primary, #00ff00);
-        font-size: 12px;
-    }
-
-    /* Phase 4: Tech Tree section */
-    .tech-tree-section {
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px dashed var(--text-dim, #008800);
-    }
-
-    .tech-tree-btn {
-        width: 100%;
-        background-color: var(--button-bg, #1a1a1a);
-        color: var(--text-cyan, #00ccff);
-        border: 1px solid var(--text-cyan, #00ccff);
-        padding: 8px 12px;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .tech-tree-btn:hover {
-        background-color: var(--text-cyan, #00ccff);
-        color: var(--panel-bg, #0f0f0f);
-    }
-
-    .tech-tree-info {
-        text-align: center;
-        margin-top: 4px;
-    }
-
-    .tech-tree-points {
-        color: var(--text-cyan, #00ccff);
-        font-size: 12px;
-    }
-
-    /* Debug mode styling */
-    .debug-section {
+    /* Prestige Points Summary */
+    .prestige-summary {
         margin-top: 12px;
         padding-top: 8px;
-        border-top: 1px dashed var(--text-dim, #008800);
+        border-top: 2px solid var(--text-amber, #ffb000);
     }
 
-    .debug-header {
+    .prestige-summary-label {
         color: var(--text-amber, #ffb000);
-        font-size: 10px;
+        font-size: 9px;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 6px;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
         text-align: center;
     }
 
-    .debug-btn {
-        width: 100%;
-        background-color: var(--button-bg, #1a1a1a);
-        color: var(--text-primary, #00ff00);
-        border: 1px solid var(--text-primary, #00ff00);
-        padding: 8px 12px;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
+    .prestige-summary-value {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .prestige-summary-value .star {
+        color: var(--text-amber, #ffb000);
+        font-size: 18px;
+    }
+
+    .prestige-summary-value .points {
+        color: var(--text-amber, #ffb000);
+        font-size: 16px;
         font-weight: bold;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        text-transform: uppercase;
     }
 
-    .debug-btn:hover {
-        background-color: var(--text-primary, #00ff00);
-        color: var(--panel-bg, #0f0f0f);
-    }
-
-    .debug-info {
-        text-align: center;
-        margin-top: 4px;
+    .prestige-summary-value .details {
         color: var(--text-dim, #008800);
         font-size: 10px;
     }
