@@ -19,6 +19,8 @@
     import TechTreeModal from './lib/components/TechTreeModal.svelte';
     // v0.4: Tuning page
     import TuningModal from './lib/components/TuningModal.svelte';
+    // v0.5: Random Event modal
+    import RandomEventModal from './lib/components/RandomEventModal.svelte';
     import { store } from './lib/game/store.svelte';
     import { isDebugMode } from './lib/env';
 
@@ -72,6 +74,8 @@
     <PrestigeSummaryModal />
     <PrestigePathModal />
     <TechTreeModal />
+    <!-- v0.5: Random Event Modal -->
+    <RandomEventModal />
 
     <!-- v0.4: Tuning modal (debug only) -->
     {#if isDebugMode() && showTuning}

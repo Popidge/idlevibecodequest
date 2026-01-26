@@ -1,7 +1,7 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers } from './types';
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, RANDOM_EVENTS, RANDOM_EVENT_CONFIG, type Upgrade, type Project, type RandomEventType } from './constants';
+import type { GameState, FloatText, Notification, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers, RandomEventState } from './types';
 import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
 
 // Default game state
@@ -98,6 +98,16 @@ class GameStore {
     // Phase 4: Tech Tree system state
     showTechTreeModal = $state(false);
     activeTechTreeTab = $state<TechTreePath>('buyout');
+
+    // v0.5: Random Event System state
+    randomEventState = $state<RandomEventState>({
+        active: false,
+        eventId: null,
+        timer: 0,
+        cooldown: 0
+    });
+    showRandomEventModal = $state(false);
+    activeRandomEvent = $state<RandomEventType | null>(null);
 
     // ========================================
     // ACTIVE MODIFIERS - Single Source of Truth
@@ -773,6 +783,24 @@ class GameStore {
                 if (Math.random() < 0.1) {
                     this.checkAndAddHints();
                 }
+
+                // v0.5: Random Event System - check every tick
+                if (this.randomEventState.active) {
+                    // Event is active - countdown the notification timer
+                    this.randomEventState.timer--;
+                    if (this.randomEventState.timer === 0) {
+                        // Timer expired - treat as ignore, start cooldown
+                        this.ignoreRandomEvent();
+                    }
+                } else if (this.randomEventState.cooldown > 0) {
+                    // No event active, countdown cooldown
+                    this.randomEventState.cooldown--;
+                } else {
+                    // No event, no cooldown - check for new event trigger
+                    if (Math.floor(Math.random() * RANDOM_EVENT_CONFIG.TRIGGER_CHANCE) === 1) {
+                        this.triggerRandomEvent();
+                    }
+                }
             }, 1000);
             
             return () => clearInterval(interval);
@@ -1019,6 +1047,94 @@ class GameStore {
 
     setActiveTechTreeTab(tab: TechTreePath) {
         this.activeTechTreeTab = tab;
+    }
+
+    // ========================================
+    // v0.5: Random Event System Methods
+    // ========================================
+
+    /**
+     * Trigger a random event - shows notification for 30 seconds
+     */
+    triggerRandomEvent() {
+        // Pick a random event
+        const eventIndex = Math.floor(Math.random() * RANDOM_EVENTS.length);
+        const event = RANDOM_EVENTS[eventIndex];
+
+        this.randomEventState = {
+            active: true,
+            eventId: event.id,
+            timer: RANDOM_EVENT_CONFIG.NOTIFICATION_DURATION,
+            cooldown: 0
+        };
+        this.activeRandomEvent = event;
+
+        this.showNotification(`⚡ RANDOM EVENT: ${event.name}! Click to Engage or Ignore.`, 'warning');
+    }
+
+    /**
+     * Ignore the current random event - starts cooldown
+     */
+    ignoreRandomEvent() {
+        if (!this.randomEventState.active) return;
+
+        this.randomEventState = {
+            active: false,
+            eventId: null,
+            timer: 0,
+            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+        };
+        this.activeRandomEvent = null;
+
+        this.showNotification('Event ignored.', 'info');
+    }
+
+    /**
+     * Engage with the current random event - opens modal, starts cooldown
+     */
+    engageRandomEvent() {
+        if (!this.randomEventState.active || !this.activeRandomEvent) return;
+
+        // Hide notification but keep event data for modal
+        this.randomEventState = {
+            active: false,
+            eventId: this.randomEventState.eventId,
+            timer: 0,
+            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+        };
+
+        // Show the event modal
+        this.showRandomEventModal = true;
+    }
+
+    /**
+     * Complete the random event - grant reward and close modal
+     */
+    completeRandomEvent() {
+        if (!this.activeRandomEvent) return;
+
+        // Grant reward directly to money (unaffected by multipliers)
+        this.gameState.resources.money += this.activeRandomEvent.reward;
+
+        this.showNotification(`💰 +$${this.activeRandomEvent.reward.toLocaleString()} from ${this.activeRandomEvent.name}!`, 'success');
+
+        // Close modal and clear event
+        this.showRandomEventModal = false;
+        this.activeRandomEvent = null;
+        this.randomEventState = {
+            active: false,
+            eventId: null,
+            timer: 0,
+            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+        };
+    }
+
+    /**
+     * Close random event modal without completing
+     */
+    closeRandomEventModal() {
+        this.showRandomEventModal = false;
+        // Event was already ended by engageRandomEvent, cooldown is set
     }
 
     init() {

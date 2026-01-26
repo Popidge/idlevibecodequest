@@ -114,6 +114,26 @@ export interface PrestigeSummary {
 // Phase 4: Tech Tree System
 export type TechTreePath = 'buyout' | 'nirvana' | 'linus' | 'learning';
 
+// ========================================
+// v0.5: Random Event System
+// ========================================
+
+export interface RandomEvent {
+    id: string;
+    name: string;
+    description: string;
+    reward: number; // Flat amount, unaffected by multipliers
+}
+
+export interface RandomEventState {
+    active: boolean;      // Is an event currently active (notification showing)?
+    eventId: string | null;
+    timer: number;        // Counts down from 30 while active (notification duration)
+    cooldown: number;     // Counts down from 60 after event ends
+}
+
+export type RandomEventSystemState = RandomEventState;
+
 // System Modifiers - Single Source of Truth for all economy calculations
 // Final = (Base + Flat) * (1 + Sum(Multipliers))
 export interface SystemModifiers {

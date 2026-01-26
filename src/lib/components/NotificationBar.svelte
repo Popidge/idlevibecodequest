@@ -25,6 +25,20 @@
 
     <!-- Right side: Control buttons (side-by-side) -->
     <div class="notification-controls">
+        <!-- v0.5: Random Event Active Button -->
+        {#if store.randomEventState.active}
+            <div class="control-item">
+                <button
+                    class="control-btn event-btn"
+                    onclick={() => store.engageRandomEvent()}
+                    title="Random Event Active!"
+                >
+                    [ EVENT! ]
+                </button>
+                <div class="control-timer event-timer">{store.randomEventState.timer}s</div>
+            </div>
+        {/if}
+
         <div class="control-item">
             <button
                 class="control-btn tech-tree-btn"
@@ -155,6 +169,33 @@
 
     .prestige-points {
         color: var(--text-amber, #ffb000);
+    }
+
+    /* v0.5: Random Event Button */
+    .event-btn {
+        border-color: var(--text-magenta, #ff00ff);
+        color: var(--text-magenta, #ff00ff);
+        animation: eventPulse 0.5s ease-in-out infinite;
+    }
+
+    .event-btn:hover {
+        background-color: var(--text-magenta, #ff00ff);
+        color: var(--panel-bg, #0f0f0f);
+    }
+
+    .event-timer {
+        color: var(--text-magenta, #ff00ff);
+        animation: timerPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes eventPulse {
+        0%, 100% { box-shadow: 0 0 4px rgba(255, 0, 255, 0.5); }
+        50% { box-shadow: 0 0 12px rgba(255, 0, 255, 0.8); }
+    }
+
+    @keyframes timerPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
     }
 
     @keyframes prestigePulse {
