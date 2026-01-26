@@ -508,7 +508,7 @@ class GameStore {
 
     // Accumulate tech debt from LoC generated (active or passive)
     accumulateDebt(locGenerated: number) {
-        const debtToAdd = locGenerated * this.effectiveDebtAccumulationPerLoc;
+        const debtToAdd = (locGenerated * this.effectiveDebtAccumulationPerLoc) * 0.1;
         this.gameState.techDebt = Math.min(
             this.gameState.techDebt + debtToAdd,
             TECH_DEBT.MAX_LEVEL
@@ -615,7 +615,7 @@ class GameStore {
         }
         
         // LoC cost: debtAmount / 2
-        const locCost = Math.floor(amount / 2);
+        const locCost = Math.floor(amount / 20);
         
         // Cash cost: LoC cost × (cheapest project LoC cost / reward)
         const cheapestProject = PROJECTS.standard[0]; // Todo App
