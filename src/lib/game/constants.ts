@@ -141,7 +141,7 @@ export type Upgrade = (typeof UPGRADES.vibeCode)[number] | (typeof UPGRADES.dele
 
 // Phase 3: Prestige System Constants
 export const PRESTIGE = {
-    THRESHOLD_PERCENT: 0.7,              // 70% of upgrades owned
+    THRESHOLD_PERCENT: 1.0,              // 70% of upgrades owned
     STARTING_CASH_PER_POINT: 1000,        // +$5,000 per point
     CASH_MULTIPLIER_PER_POINT: 0.1,      // +20% per point (additive)
     LOC_MULTIPLIER_PER_POINT: 0.1,       // +15% per point (additive)

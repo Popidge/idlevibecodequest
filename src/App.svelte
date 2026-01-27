@@ -188,7 +188,7 @@
         height: 100%;
         background-color: var(--terminal-bg, #0d0d0d);
         border: 2px solid var(--border-color, #00ff00);
-        box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        box-shadow: 0 0 30px rgba(212, 134, 92, 0.3);
         padding: 10px;
         opacity: 1;
         visibility: visible;
@@ -205,7 +205,7 @@
         height: 100%;
         background-color: var(--terminal-bg, #0d0d0d);
         border: 2px solid var(--border-color, #00ff00);
-        box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        box-shadow: 0 0 30px rgba(212, 134, 92, 0.3);
         padding: 8px;
         opacity: 0;
         visibility: hidden;
@@ -329,7 +329,7 @@
 
     .float-text {
         position: fixed;
-        color: var(--text-primary, #00ff00);
+        color: var(--text-primary, #e8e6e3);
         font-size: 14px;
         font-weight: bold;
         pointer-events: none;

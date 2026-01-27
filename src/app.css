@@ -8,48 +8,48 @@
 }
 
 /* ==========================================================================
-   BASE THEME VARIABLES (Terminal - Default)
+   BASE THEME VARIABLES (Terminal - Default) - Claude Code Inspired
    ========================================================================== */
 :root {
-    /* Core Colors */
-    --bg-color: #0a0a0a;
-    --terminal-bg: #0d0d0d;
-    --panel-bg: #0f0f0f;
-    
-    /* Text Colors */
-    --text-primary: #00ff00;
-    --text-secondary: #00cc00;
-    --text-dim: #008800;
-    --text-muted: #444444;
-    
-    /* Accent Colors */
-    --text-amber: #ffb000;
-    --text-cyan: #00ccff;
-    --text-magenta: #ff00ff;
+    /* Core Colors - Dark charcoal like Claude Code */
+    --bg-color: #1e1e1e;
+    --terminal-bg: #1a1a1a;
+    --panel-bg: #252526;
+
+    /* Text Colors - Warm off-white/cream instead of green */
+    --text-primary: #e8e6e3;
+    --text-secondary: #d4d4d4;
+    --text-dim: #6e6e6e;
+    --text-muted: #4a4a4a;
+
+    /* Accent Colors - Warm orange/salmon like Claude Code */
+    --text-amber: #d4865c;
+    --text-cyan: #9cdcfe;
+    --text-magenta: #c586c0;
     --text-white: #ffffff;
-    --text-danger: #ff4444;
-    
-    /* UI Elements */
-    --border-color: #00ff00;
+    --text-danger: #f44747;
+
+    /* UI Elements - Subtle orange borders */
+    --border-color: #d4865c;
     --border-width: 1px;
-    --border-style: solid;
-    --border-radius: 0px;
-    
+    --border-style: dashed;
+    --border-radius: 6px;
+
     /* Buttons */
-    --button-bg: #1a1a1a;
-    --button-hover: #2a2a2a;
-    --button-active: #3a3a3a;
-    --disabled-color: #444444;
-    
+    --button-bg: #2d2d30;
+    --button-hover: #3e3e42;
+    --button-active: #0e639c;
+    --disabled-color: #4a4a4a;
+
     /* Tabs */
-    --tab-active-bg: #1a3a1a;
-    --tab-active-border: #00ff00;
-    
+    --tab-active-bg: #2d2d30;
+    --tab-active-border: #d4865c;
+
     /* Panels */
-    --panel-border-left: 1px solid var(--border-color);
-    --panel-border-right: 1px solid var(--border-color);
+    --panel-border-left: 1px dashed var(--border-color);
+    --panel-border-right: 1px dashed var(--border-color);
     --panel-shadow: none;
-    
+
     /* Typography */
     --font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
     --font-size-xs: 10px;
@@ -57,36 +57,36 @@
     --font-size-base: 12px;
     --font-size-lg: 14px;
     --font-size-xl: 18px;
-    
+
     /* Dashboard */
-    --dashboard-border: 2px solid var(--border-color);
-    --dashboard-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+    --dashboard-border: 1px dashed var(--border-color);
+    --dashboard-shadow: 0 0 20px rgba(212, 134, 92, 0.15);
     --dashboard-gap: 10px;
     --dashboard-padding: 10px;
-    
+
     /* Items/Projects */
     --item-locked-opacity: 0.5;
-    --item-purchased-bg: #1a2a1a;
-    --item-affordable-bg: #1a3a1a;
-    --item-affordable-shadow: 0 0 6px rgba(0, 255, 0, 0.2);
-    
+    --item-purchased-bg: #37373d;
+    --item-affordable-bg: rgba(212, 134, 92, 0.15);
+    --item-affordable-shadow: 0 0 8px rgba(212, 134, 92, 0.2);
+
     /* Notifications */
-    --notification-success-bg: rgba(0, 40, 0, 0.3);
-    --notification-success-border: rgba(0, 255, 0, 0.3);
-    --notification-warning-bg: rgba(40, 30, 0, 0.3);
-    --notification-warning-border: rgba(255, 176, 0, 0.3);
-    --notification-info-bg: rgba(0, 30, 40, 0.3);
-    --notification-info-border: rgba(0, 204, 255, 0.3);
-    
+    --notification-success-bg: rgba(212, 134, 92, 0.15);
+    --notification-success-border: rgba(212, 134, 92, 0.4);
+    --notification-warning-bg: rgba(206, 145, 120, 0.15);
+    --notification-warning-border: rgba(206, 145, 120, 0.4);
+    --notification-info-bg: rgba(156, 220, 254, 0.15);
+    --notification-info-border: rgba(156, 220, 254, 0.4);
+
     /* Scrollbar */
     --scrollbar-track: var(--terminal-bg);
-    --scrollbar-thumb: var(--text-dim);
-    --scrollbar-thumb-hover: var(--text-secondary);
-    
+    --scrollbar-thumb: #4a4a4a;
+    --scrollbar-thumb-hover: #6e6e6e;
+
     /* Modal */
-    --modal-backdrop: rgba(0, 0, 0, 0.7);
-    --modal-border: 1px solid var(--border-color);
-    
+    --modal-backdrop: rgba(30, 30, 30, 0.85);
+    --modal-border: 1px dashed var(--border-color);
+
     /* Theme-specific decorations */
     --decoration-display: none;
 }
@@ -331,11 +331,102 @@ body {
    THEME-SPECIFIC OVERRIDES
    ========================================================================== */
 
-/* Terminal Theme: ASCII Box Drawing */
+/* Terminal Theme: Claude Code Inspired Styling */
 [data-theme="terminal"] .panel-header,
 [data-theme="terminal"] .panel-footer {
     font-size: var(--font-size-base);
     white-space: pre;
+    color: var(--text-amber);
+}
+
+[data-theme="terminal"] .panel-header {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-color);
+    margin-bottom: 4px;
+}
+
+[data-theme="terminal"] .panel-content {
+    border-left: 1px dashed var(--border-color);
+    border-right: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+[data-theme="terminal"] .title-panel .panel-content {
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+/* Terminal Theme: Rounded buttons */
+[data-theme="terminal"] .window-btn,
+[data-theme="terminal"] .prompt-btn,
+[data-theme="terminal"] .debug-btn,
+[data-theme="terminal"] .control-btn {
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--border-color);
+    transition: all 0.2s ease;
+}
+
+[data-theme="terminal"] .window-btn:hover,
+[data-theme="terminal"] .prompt-btn:hover,
+[data-theme="terminal"] .debug-btn:hover,
+[data-theme="terminal"] .control-btn:hover {
+    background-color: var(--text-amber);
+    color: var(--panel-bg);
+    border-style: solid;
+}
+
+/* Terminal Theme: Tab styling */
+[data-theme="terminal"] .tab-btn {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border: 1px dashed var(--border-color);
+    border-bottom: none;
+    margin-right: 4px;
+    padding: 6px 12px;
+}
+
+[data-theme="terminal"] .tab-btn.active {
+    background-color: var(--tab-active-bg);
+    border-color: var(--tab-active-border);
+    border-style: solid;
+}
+
+/* Terminal Theme: Project/Upgrade items */
+[data-theme="terminal"] .project-item,
+[data-theme="terminal"] .upgrade-item {
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--border-color);
+    transition: all 0.2s ease;
+}
+
+[data-theme="terminal"] .project-item.affordable,
+[data-theme="terminal"] .upgrade-item.affordable {
+    border-color: var(--text-amber);
+    border-style: solid;
+    background-color: var(--item-affordable-bg);
+}
+
+[data-theme="terminal"] .project-item:hover:not(.locked):not(.purchased),
+[data-theme="terminal"] .upgrade-item:hover:not(.locked):not(.purchased) {
+    border-style: solid;
+    background-color: var(--button-hover);
+}
+
+/* Terminal Theme: Modal styling */
+[data-theme="terminal"] .modal-content {
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--border-color);
+    background-color: var(--panel-bg);
+}
+
+[data-theme="terminal"] .modal-header {
+    border-bottom: 1px dashed var(--border-color);
+    padding: 12px 16px;
+}
+
+[data-theme="terminal"] .modal-footer {
+    border-top: 1px dashed var(--border-color);
+    padding: 12px 16px;
 }
 
 /* IDE Theme: Clean headers */
