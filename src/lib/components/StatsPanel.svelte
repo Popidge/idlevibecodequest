@@ -341,4 +341,123 @@
         color: var(--text-dim, #008800);
         font-size: 10px;
     }
+
+    /* Tablet Styles (768px - 1100px) */
+    @media (max-width: 1100px) and (min-width: 768px) {
+        .stats-panel {
+            grid-column: auto;
+            grid-row: auto;
+        }
+
+        .panel-content {
+            padding: 6px;
+        }
+
+        .stats-content {
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+        }
+
+        .stat-value {
+            font-size: 11px;
+        }
+
+        .stat-divider {
+            font-size: 8px;
+            padding: 2px 0;
+        }
+
+        .debt-container {
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0;
+        }
+
+        .debt-value {
+            font-size: 11px;
+        }
+
+        .debt-multiplier {
+            font-size: 8px;
+        }
+
+        .prestige-summary {
+            margin-top: 8px;
+            padding-top: 6px;
+        }
+
+        .prestige-summary-label {
+            font-size: 8px;
+        }
+
+        .prestige-summary-value .star {
+            font-size: 14px;
+        }
+
+        .prestige-summary-value .points {
+            font-size: 13px;
+        }
+
+        .prestige-summary-value .details {
+            font-size: 9px;
+        }
+
+        .clear-btn {
+            font-size: 9px;
+            padding: 2px 8px;
+        }
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 767px) {
+        .stats-panel {
+            grid-column: auto;
+            grid-row: auto;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .stats-content {
+            gap: 12px;
+        }
+
+        .stat-row {
+            padding: 4px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+        }
+
+        .prestige-summary {
+            margin-top: 16px;
+            padding-top: 12px;
+        }
+
+        .prestige-summary-value .points {
+            font-size: 20px;
+        }
+
+        .clear-btn {
+            min-height: 44px;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+    }
 </style>

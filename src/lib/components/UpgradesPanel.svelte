@@ -244,4 +244,128 @@
         overflow-y: auto;
         overflow-x: hidden;
     }
+
+    /* Tablet Styles (768px - 1100px) */
+    @media (max-width: 1100px) and (min-width: 768px) {
+        .upgrades-panel {
+            grid-column: auto;
+            grid-row: auto;
+        }
+
+        .panel-header {
+            font-size: 11px;
+            padding: 4px;
+        }
+
+        .panel-content {
+            padding: 6px;
+        }
+
+        .tab-bar {
+            gap: 2px;
+            padding: 2px 0;
+        }
+
+        .tab-btn {
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+
+        .item-list {
+            gap: 4px;
+        }
+
+        .upgrade-item {
+            padding: 6px 8px;
+        }
+
+        .item-name {
+            font-size: 11px;
+        }
+
+        .item-cost {
+            font-size: 11px;
+        }
+
+        .item-reward {
+            font-size: 10px;
+        }
+
+        .item-locked-text {
+            font-size: 10px;
+        }
+
+        .panel-footer {
+            font-size: 10px;
+        }
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 767px) {
+        .upgrades-panel {
+            grid-column: auto;
+            grid-row: auto;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 11px;
+            padding: 8px 12px;
+            white-space: normal;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .tab-bar {
+            padding: 8px 0;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 4px;
+            font-size: 11px;
+            min-height: 44px;
+        }
+
+        .item-list {
+            gap: 8px;
+        }
+
+        .upgrade-item {
+            min-height: 60px;
+            padding: 12px 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .item-name {
+            font-size: 14px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .item-cost {
+            font-size: 13px;
+        }
+
+        .item-reward {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .panel-footer {
+            display: none;
+        }
+    }
 </style>
