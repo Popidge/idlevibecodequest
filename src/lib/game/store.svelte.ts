@@ -73,6 +73,9 @@ class GameStore {
 
     // Unified notification queue for NotificationBar
     notificationQueue = $state<QueuedNotification[]>([]);
+    
+    // Theme system
+    currentTheme = $state<'terminal' | 'ide' | 'vibe-ai'>('terminal');
 
     // Phase 1: Offline gains modal state
     offlineGains = $state<OfflineGains | null>(null);
@@ -1123,7 +1126,32 @@ class GameStore {
         // Event was already ended by engageRandomEvent, cooldown is set
     }
 
+    // Theme management
+    setTheme(theme: 'terminal' | 'ide' | 'vibe-ai') {
+        this.currentTheme = theme;
+        this.applyTheme();
+        this.saveTheme();
+    }
+    
+    private applyTheme() {
+        // Apply theme to document root for CSS to pick up
+        document.documentElement.setAttribute('data-theme', this.currentTheme);
+    }
+    
+    private saveTheme() {
+        localStorage.setItem('vibeCodeClicker_theme', this.currentTheme);
+    }
+    
+    private loadTheme() {
+        const savedTheme = localStorage.getItem('vibeCodeClicker_theme');
+        if (savedTheme && ['terminal', 'ide', 'vibe-ai'].includes(savedTheme)) {
+            this.currentTheme = savedTheme as 'terminal' | 'ide' | 'vibe-ai';
+        }
+        this.applyTheme();
+    }
+
     init() {
+        this.loadTheme();
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();

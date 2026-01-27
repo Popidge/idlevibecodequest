@@ -108,6 +108,8 @@
         gap: 12px;
         align-items: flex-start;
         flex-shrink: 0;
+        margin-left: auto;
+        padding-left: 40px;
     }
 
     .control-item {

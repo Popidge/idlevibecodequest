@@ -20,7 +20,7 @@
 </script>
 
 <div class="panel stats-panel">
-    <div class="panel-header">┌─ STATS ──────────────────┐</div>
+    <div class="panel-header">┌─ STATS </div>
     <div class="panel-content stats-content">
         <div class="stat-row">
             <span class="stat-label">Money:</span>
@@ -119,7 +119,6 @@
             </div>
         </div>
     </div>
-    <div class="panel-footer">└──────────────────────────┘</div>
 </div>
 
 <style>

@@ -4,7 +4,7 @@
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">┌─ idle-vibe-code v0.4 ────┐</div>
+    <div class="panel-header">idle-vibe-code v0.4</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗
@@ -17,7 +17,6 @@
 ╚══════════╝
         </pre>
     </div>
-    <div class="panel-footer">└──────────────────────────┘</div>
 </div>
 
 <style>
@@ -46,6 +45,7 @@
         padding: 10px;
         border-left: 1px solid var(--border-color, #00ff00);
         border-right: 1px solid var(--border-color, #00ff00);
+        border-bottom: 1px solid var(--border-color, #00ff00);
     }
 
     .title-content {

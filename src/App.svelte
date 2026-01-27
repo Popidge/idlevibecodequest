@@ -21,6 +21,8 @@
     import TuningModal from './lib/components/TuningModal.svelte';
     // v0.5: Random Event modal
     import RandomEventModal from './lib/components/RandomEventModal.svelte';
+    // Theme system
+    import ThemeToggle from './lib/components/ThemeToggle.svelte';
     import { store } from './lib/game/store.svelte';
     import { isDebugMode } from './lib/env';
 
@@ -40,6 +42,9 @@
 </script>
 
 <div class="terminal-dashboard">
+    <!-- Theme Toggle (centered top) -->
+    <ThemeToggle />
+    
     <!-- Row 1: Title, Notifications, Debug -->
     <TitlePanel />
     <NotificationBar />
