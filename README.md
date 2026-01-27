@@ -4,9 +4,9 @@
 
 You're a developer. You have a keyboard. You have AI that will write code for you (sort of).
 
-**Your mission:** Ship projects, earn cred, upgrade your vibe, and become the ultimate prompt engineer.
+**Your mission:** Ship projects, earn cred, upgrade your vibe, accumulate tech debt, and become the ultimate prompt engineer.
 
-![Screenshot](vgc_screenshot.png)
+![Screenshot](ivcq_screenshot.png)
 
 ---
 
@@ -17,7 +17,12 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 3. **Buy upgrades** to automate the suffering:
    - **Vibe Code** → More LoC per click
    - **Delegation** → Hire help (interns, juniors, seniors, eventually AI)
-4. **Unlock** new projects as your cred grows
+   - **Tech Tree** → Unlock powerful permanent upgrades
+4. **Watch out for tech debt** 📉 - it slows you down as you grow
+5. **Prestige** 🌟 when you hit the wall - reset for permanent meta-upgrades
+6. **Offline gains** - come back later, we've been vibing without you
+7. **Random events** - because chaos is part of the startup experience
+8. **Unlock** new projects as your cred grows
 
 ---
 
@@ -27,6 +32,8 @@ You're a developer. You have a keyboard. You have AI that will write code for yo
 - **TypeScript** for type safety 😤
 - **Vite** for speedy builds ⚡
 - **pnpm** for package management 📦
+- **Fully responsive** - vibe on desktop or mobile 📱
+- **Dark/light themes** - code in your preferred aesthetic 🌙☀️
 
 ---
 
@@ -56,10 +63,12 @@ Got ideas? Found a bug? Want to add a new project or upgrade?
 
 ### Ideas for Contributions
 
-- New project types (mobile apps, blockchain, AI startups...)
-- More upgrades (ergonomic keyboard, coffee machine, standing desk...)
-- UI improvements (animations, sounds, easter eggs)
-- Quality of life features (save export/import, statistics)
+- New project types (Web3, quantum computing, space startups...)
+- More upgrades (mechanical keyboard, standing desk, second monitor...)
+- Sounds and music (keyboards clacking, lo-fi beats to vibe/code to)
+- Easter eggs (konami code, secret projects, achievements)
+- Quality of life features (save export/import, detailed statistics)
+- Localization (translate the vibes to other languages)
 - Documentation (you're reading it!)
 
 ### How to Contribute
@@ -76,15 +85,19 @@ Got ideas? Found a bug? Want to add a new project or upgrade?
 ```
 src/
 ├── lib/
-│   ├── components/     # Svelte components (panels, UI)
-│   └── game/          # Game logic, types, constants
-│       ├── constants.ts    # Projects, upgrades, unlocks
-│       ├── store.svelte.ts # Game state management
-│       ├── types.ts        # TypeScript interfaces
-│       └── utils.ts        # Helper functions
-├── App.svelte         # Main app component
-├── app.css            # Global styles (TUI aesthetic)
-└── main.ts            # Entry point
+│   ├── components/          # Svelte components (panels, UI, modals)
+│   │   ├── mobile/          # Mobile-optimized layout components 📱
+│   │   └── *.svelte         # Various panels and modal components
+│   ├── stores/              # Responsive state and other stores
+│   └── game/                # Game logic, types, constants
+│       ├── constants.ts     # Projects, upgrades, unlocks
+│       ├── store.svelte.ts  # Game state management
+│       ├── tuning-sim.ts    # Balance tuning simulator
+│       ├── types.ts         # TypeScript interfaces
+│       └── utils.ts         # Helper functions
+├── App.svelte              # Main app component
+├── app.css                 # Global styles (TUI aesthetic)
+└── main.ts                 # Entry point
 ```
 
 ---
@@ -95,6 +108,8 @@ src/
 - **Type-safe** - Use TypeScript properly, no `any` allowed (unless it's funny)
 - **Minimal deps** - If you can code it yourself, do it
 - **Svelte 5** - Use the new runes API, it's the future
+- **Mobile-first** - Vibes should flow on any screen size
+- **Dark by default** - We're developers, we live in the dark
 
 ---
 
