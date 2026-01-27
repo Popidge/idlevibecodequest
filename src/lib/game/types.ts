@@ -92,7 +92,6 @@ export interface PrestigeState {
     totalPrestiges: number;
     pathHistory: PrestigePath[];
     runStartTime: number;
-    totalCashEarnedThisRun: number;
     bonuses?: PrestigeBonuses; // Optional - deprecated, now calculated from techTrees
     // Phase 4: Tech tree purchases
     techTrees: {

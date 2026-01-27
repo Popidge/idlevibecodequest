@@ -48,8 +48,8 @@
                         <span class="stat-value">{summary.projectsShipped}</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label">Upgrades Owned:</span>
-                        <span class="stat-value">{summary.upgradesOwned}</span>
+                        <span class="stat-label">Upgrade Points:</span>
+                        <span class="stat-value">{summary.upgradesOwned} / {store.totalUpgradesAvailable}</span>
                     </div>
                 </div>
                 
@@ -59,7 +59,7 @@
                         <span class="points-value">+{summary.pointsEarned}</span>
                         <span class="points-label">Prestige Points</span>
                     </div>
-                    <p class="points-note">Points are based on total cash earned: floor(log10(cash + 1))</p>
+                    <p class="points-note">Points are based on upgrade investment: floor(upgrades / threshold)</p>
                 </div>
                 
                 <div class="warning-section">

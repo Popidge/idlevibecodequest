@@ -142,10 +142,10 @@ export type Upgrade = (typeof UPGRADES.vibeCode)[number] | (typeof UPGRADES.dele
 // Phase 3: Prestige System Constants
 export const PRESTIGE = {
     THRESHOLD_PERCENT: 0.7,              // 70% of upgrades owned
-    STARTING_CASH_PER_POINT: 5000,        // +$5,000 per point
-    CASH_MULTIPLIER_PER_POINT: 0.20,      // +20% per point (additive)
-    LOC_MULTIPLIER_PER_POINT: 0.15,       // +15% per point (additive)
-    CRED_MULTIPLIER_PER_POINT: 0.25,      // +25% per point (additive)
+    STARTING_CASH_PER_POINT: 1000,        // +$5,000 per point
+    CASH_MULTIPLIER_PER_POINT: 0.1,      // +20% per point (additive)
+    LOC_MULTIPLIER_PER_POINT: 0.1,       // +15% per point (additive)
+    CRED_MULTIPLIER_PER_POINT: 0.1,      // +25% per point (additive)
     MIN_POINTS: 1,                        // Minimum prestige points
     // Learning path defaults
     DEBT_RELIEF_PER_POINT: 0.02,          // -0.02 starting debt per point

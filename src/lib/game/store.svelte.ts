@@ -35,7 +35,6 @@ const defaultState: GameState = {
         totalPrestiges: 0,
         pathHistory: [],
         runStartTime: Date.now(),
-        totalCashEarnedThisRun: 0,
         // Phase 4: Tech Tree purchases - bonuses now calculated dynamically from techTrees
         techTrees: {
             buyout: [],
@@ -361,19 +360,25 @@ class GameStore {
         return Math.min((this.gameState.resources.loc / this.cheapestUpgrade.cost) * 100, 100);
     }
     
-    // Phase 3: Prestige System - Total upgrades available (vibeCode 1-10 + delegation 1-10 = 20 total)
+    // Phase 3: Prestige System - Total upgrade points available (level sum × 2)
+    // Sum of levels 1-10 for each upgrade type: (1+2+...+10) × 2 = 55 × 2 = 110
     get totalUpgradesAvailable() {
-        return UPGRADES.vibeCode.length + UPGRADES.delegation.length;
+        const sum1to10 = (10 * 11) / 2; // 55
+        return sum1to10 * 2; // 110 total (vibeCode + delegation)
     }
     
-    // Count total upgrades owned
+    // Calculate total upgrade points owned (weighted by level)
+    // Each copy of an upgrade contributes its level number
+    // Example: 5×L1 + 3×L2 vibeCode = (5×1) + (3×2) = 11 points
     get totalUpgradesOwned() {
         let owned = 0;
         for (const level in this.gameState.upgrades.vibeCode) {
-            owned += this.gameState.upgrades.vibeCode[level];
+            const count = this.gameState.upgrades.vibeCode[level];
+            owned += parseInt(level) * count;
         }
         for (const level in this.gameState.upgrades.delegation) {
-            owned += this.gameState.upgrades.delegation[level];
+            const count = this.gameState.upgrades.delegation[level];
+            owned += parseInt(level) * count;
         }
         return owned;
     }
@@ -388,20 +393,13 @@ class GameStore {
         return this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT;
     }
     
-    // Calculate prestige points to earn
+    // Calculate prestige points to earn based on upgrade investment
+    // Formula: floor(totalUpgradesOwned / (totalUpgradesAvailable × threshold))
+    // Minimum of PRESTIGE.MIN_POINTS (1)
     get prestigePointsToEarn() {
-        // Formula: floor(log10(total cash + 1))
-        const cash = this.gameState.prestige?.totalCashEarnedThisRun ?? this.gameState.resources.money;
-        const rawPoints = Math.floor(Math.log10(cash + 1));
-        const basePoints = Math.max(rawPoints, PRESTIGE.MIN_POINTS);
-        
-        // Apply tech tree multiplier
-        return Math.floor(basePoints * this.effectivePrestigePointMultiplier);
-    }
-    
-    // Track total cash earned this run
-    get totalCashEarnedThisRun() {
-        return this.gameState.prestige?.totalCashEarnedThisRun ?? this.gameState.resources.money;
+        const thresholdValue = this.totalUpgradesAvailable * PRESTIGE.THRESHOLD_PERCENT;
+        const rawPoints = Math.floor(this.totalUpgradesOwned / thresholdValue);
+        return Math.max(rawPoints, PRESTIGE.MIN_POINTS);
     }
     
     // Get formatted run duration
@@ -418,7 +416,7 @@ class GameStore {
         return {
             pointsEarned: this.prestigePointsToEarn,
             runDuration: this.runDuration,
-            cashEarned: this.totalCashEarnedThisRun,
+            cashEarned: this.gameState.resources.money,
             projectsShipped: this.gameState.projectsShipped,
             upgradesOwned: this.totalUpgradesOwned
         };
@@ -548,7 +546,6 @@ class GameStore {
         
         this.gameState.resources.money += effectiveMoneyReward;
         this.gameState.resources.cred += effectiveCredReward;
-        this.trackCashEarned(effectiveMoneyReward);
         
         this.gameState.projects[type][projectId] = currentCount + 1;
         
@@ -768,7 +765,6 @@ class GameStore {
                 
                 if (this.basePassiveIncome > 0) {
                     this.gameState.resources.money += this.effectivePassiveIncome;
-                    this.trackCashEarned(this.effectivePassiveIncome);
                 }
                 
                 // Phase 4: Vertical Integration - Auto-purchase cheapest upgrade if enabled
@@ -988,7 +984,6 @@ class GameStore {
                 totalPrestiges: 0,
                 pathHistory: [],
                 runStartTime: Date.now(),
-                totalCashEarnedThisRun: 0,
                 techTrees: existingTechTrees
             };
         }
@@ -998,7 +993,6 @@ class GameStore {
         this.gameState.prestige.totalPrestiges += 1;
         this.gameState.prestige.pathHistory.push(path);
         this.gameState.prestige.runStartTime = Date.now();
-        this.gameState.prestige.totalCashEarnedThisRun = 0;
 
         // Preserve tech trees
         this.gameState.prestige.techTrees = existingTechTrees;
@@ -1012,14 +1006,6 @@ class GameStore {
         this.notificationQueue = [];
         this.showNotification(`PRESTIGE! +${pointsToEarn} prestige points! New run begins...`);
     }
-    
-    // Track cash earned this run for prestige calculation
-    trackCashEarned(amount: number) {
-        if (this.gameState.prestige) {
-            this.gameState.prestige.totalCashEarnedThisRun += amount;
-        }
-    }
-    
     // Hard reset that clears prestige data too
     hardResetGame() {
         if (confirm('Are you sure? This will wipe ALL progress including prestige!')) {
