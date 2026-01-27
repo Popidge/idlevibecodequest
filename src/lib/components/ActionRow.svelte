@@ -33,6 +33,95 @@
         min-height: 60px;
     }
 
+    /* Tablet Styles (900px - 1100px) */
+    @media (max-width: 1100px) and (min-width: 901px) {
+        .action-row {
+            grid-template-columns: auto 1fr auto;
+            gap: 8px;
+            padding: 10px 6px;
+            min-height: 50px;
+        }
+
+        .action-left {
+            gap: 4px;
+        }
+
+        .action-buttons {
+            gap: 6px;
+        }
+
+        .window-btn {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .action-center {
+            padding: 0 8px;
+        }
+
+        .prompt-text {
+            font-size: 12px;
+        }
+
+        .action-right {
+            padding-right: 4px;
+        }
+
+        .prompt-btn {
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+    }
+
+    /* Narrow Tablet Styles (768px - 900px) - Stack buttons, wrap prompt text */
+    @media (max-width: 900px) and (min-width: 768px) {
+        .action-row {
+            grid-template-columns: auto 1fr auto;
+            gap: 6px;
+            padding: 8px 6px;
+            min-height: 60px;
+        }
+
+        .action-left {
+            align-items: stretch;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .window-btn {
+            padding: 3px 6px;
+            font-size: 9px;
+            min-height: 24px;
+        }
+
+        .action-center {
+            padding: 0 6px;
+            align-items: flex-start;
+        }
+
+        .prompt-text {
+            font-size: 11px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .action-right {
+            padding-right: 2px;
+        }
+
+        .prompt-btn {
+            padding: 6px 8px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+    }
+
     .action-left {
         display: flex;
         align-items: center;

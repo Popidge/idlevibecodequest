@@ -4,7 +4,7 @@
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">idle-vibe-code v0.4</div>
+    <div class="panel-header">idle-vibe-code v0.5</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗

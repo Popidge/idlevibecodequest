@@ -25,6 +25,13 @@
     import ThemeToggle from './lib/components/ThemeToggle.svelte';
     import { store } from './lib/game/store.svelte';
     import { isDebugMode } from './lib/env';
+    // Mobile components
+    import { mobileTab, type MobileTab } from './lib/stores/responsive';
+    import MobileHeader from './lib/components/mobile/MobileHeader.svelte';
+    import MobileStatsBar from './lib/components/mobile/MobileStatsBar.svelte';
+    import MobileActionArea from './lib/components/mobile/MobileActionArea.svelte';
+    import MobileTabBar from './lib/components/mobile/MobileTabBar.svelte';
+    import MobileInfoTab from './lib/components/mobile/MobileInfoTab.svelte';
 
     let showTuning = $state(false);
 
@@ -39,38 +46,103 @@
     function grantDebugResources() {
         store.grantDebugResources();
     }
+
+    function handleTabChange(tab: MobileTab) {
+        mobileTab.set(tab);
+    }
 </script>
 
 <div class="terminal-dashboard">
-    <!-- Theme Toggle (centered top) -->
-    <ThemeToggle />
-    
-    <!-- Row 1: Title, Notifications, Debug -->
-    <TitlePanel />
-    <NotificationBar />
+    <!-- Desktop Layout - Full 3-column grid -->
+    <div class="desktop-layout">
+        <!-- Theme Toggle (centered top) -->
+        <ThemeToggle />
+        
+        <!-- Row 1: Title, Notifications, Debug -->
+        <TitlePanel />
+        <NotificationBar />
 
-    <!-- Debug Toolbar (top-right of row 1) -->
-    {#if isDebugMode()}
-        <div class="debug-toolbar">
-            <button class="debug-btn" onclick={grantDebugResources} title="Add debug resources">
-                🐛 RESOURCES
-            </button>
-            <button class="debug-btn tuning-btn" onclick={toggleTuning} title="Open tuning page">
-                ⚙️ TUNING
-            </button>
+        <!-- Debug Toolbar (top-right of row 1) -->
+        {#if isDebugMode()}
+            <div class="debug-toolbar">
+                <button class="debug-btn" onclick={grantDebugResources} title="Add debug resources">
+                    🐛 RESOURCES
+                </button>
+                <button class="debug-btn tuning-btn" onclick={toggleTuning} title="Open tuning page">
+                    ⚙️ TUNING
+                </button>
+            </div>
+        {/if}
+
+        <!-- Row 2: Main Content -->
+        <StatsPanel />
+        <ProjectsPanel />
+        <UpgradesPanel />
+
+        <!-- Row 3: Action Row (Prompt + Save/Reset) -->
+        <ActionRow />
+
+        <!-- Row 4: Footer -->
+        <Footer />
+    </div>
+
+    <!-- Tablet Layout - Sidebar + stacked panels -->
+    <div class="tablet-layout">
+        <!-- Theme Toggle (centered top) -->
+        <ThemeToggle />
+        
+        <!-- Row 1: Title, Notifications, Debug -->
+        <TitlePanel />
+        <NotificationBar />
+
+        <!-- Debug Toolbar (top-right of row 1) -->
+        {#if isDebugMode()}
+            <div class="debug-toolbar tablet-debug">
+                <button class="debug-btn" onclick={grantDebugResources} title="Add debug resources">
+                    🐛 RESOURCES
+                </button>
+                <button class="debug-btn tuning-btn" onclick={toggleTuning} title="Open tuning page">
+                    ⚙️ TUNING
+                </button>
+            </div>
+        {/if}
+
+        <!-- Row 2: Stats Sidebar -->
+        <StatsPanel />
+        
+        <!-- Row 2: Stacked Projects & Upgrades -->
+        <div class="tablet-main-content">
+            <ProjectsPanel />
+            <UpgradesPanel />
         </div>
-    {/if}
 
-    <!-- Row 2: Main Content -->
-    <StatsPanel />
-    <ProjectsPanel />
-    <UpgradesPanel />
+        <!-- Row 3: Action Row -->
+        <ActionRow />
 
-    <!-- Row 3: Action Row (Prompt + Save/Reset) -->
-    <ActionRow />
+        <!-- Row 4: Footer -->
+        <Footer />
+    </div>
 
-    <!-- Row 4: Footer -->
-    <Footer />
+    <!-- Mobile Layout - Hidden on desktop/tablet -->
+    <div class="mobile-layout">
+        <MobileHeader onToggleTuning={toggleTuning} />
+        <MobileStatsBar />
+        <MobileActionArea />
+        
+        <div class="mobile-content">
+            {#if $mobileTab === 'projects'}
+                <ProjectsPanel />
+            {:else if $mobileTab === 'upgrades'}
+                <UpgradesPanel />
+            {:else if $mobileTab === 'stats'}
+                <StatsPanel />
+            {:else if $mobileTab === 'info'}
+                <MobileInfoTab onToggleTuning={toggleTuning} />
+            {/if}
+        </div>
+        
+        <MobileTabBar activeTab={$mobileTab} onTabChange={handleTabChange} />
+    </div>
 
     <!-- Modals -->
     <DebtReductionModal />
@@ -100,18 +172,123 @@
 
 <style>
     .terminal-dashboard {
+        width: 100%;
+        max-width: 1400px;
+        height: calc(100vh - 40px);
+        position: relative;
+    }
+
+    /* Desktop Layout */
+    .desktop-layout {
         display: grid;
         grid-template-columns: 200px 1fr 1fr;
         grid-template-rows: auto 1fr auto auto;
         gap: 10px;
         width: 100%;
-        max-width: 1400px;
-        height: calc(100vh - 40px);
+        height: 100%;
         background-color: var(--terminal-bg, #0d0d0d);
         border: 2px solid var(--border-color, #00ff00);
         box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
         padding: 10px;
-        position: relative;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    /* Tablet Layout - Sidebar + Stacked Panels */
+    .tablet-layout {
+        display: none;
+        grid-template-columns: 180px 1fr;
+        grid-template-rows: auto auto 1fr auto auto;
+        gap: 8px;
+        width: 100%;
+        height: 100%;
+        background-color: var(--terminal-bg, #0d0d0d);
+        border: 2px solid var(--border-color, #00ff00);
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        padding: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .tablet-layout :global(.title-panel) {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .tablet-layout :global(.notification-bar) {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: start;
+    }
+
+    .tablet-layout :global(.stats-panel) {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .tablet-main-content {
+        grid-column: 2;
+        grid-row: 2 / 5;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .tablet-layout :global(.projects-panel),
+    .tablet-layout :global(.upgrades-panel) {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .tablet-layout :global(.action-row) {
+        grid-column: 1 / 3;
+        grid-row: 5;
+    }
+
+    .tablet-layout :global(.footer) {
+        grid-column: 1 / 3;
+        grid-row: 6;
+    }
+
+    .tablet-debug {
+        position: static;
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        align-self: start;
+        margin: 2px 4px 0 0;
+        gap: 4px;
+    }
+
+    .tablet-layout :global(.theme-toggle) {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: start;
+        margin: 2px 0 0 4px;
+    }
+
+    /* Mobile Layout */
+    .mobile-layout {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        background-color: var(--bg-color);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .mobile-content {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
     }
 
     .debug-toolbar {
@@ -170,4 +347,58 @@
             transform: translateY(-30px);
         }
     }
+
+    /* Tablet breakpoint - Sidebar + stacked panels (768px - 1100px) */
+    @media (max-width: 1100px) and (min-width: 768px) {
+        .desktop-layout {
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .tablet-layout {
+            display: grid;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-layout {
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Smaller debug buttons for tablet */
+        .tablet-debug .debug-btn {
+            padding: 4px 8px;
+            font-size: 9px;
+        }
+    }
+
+    /* Mobile breakpoint - Full mobile layout */
+    @media (max-width: 767px) {
+        .terminal-dashboard {
+            height: 100vh;
+            max-width: 100%;
+        }
+
+        .desktop-layout {
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .tablet-layout {
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .mobile-layout {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+    }
+
 </style>
