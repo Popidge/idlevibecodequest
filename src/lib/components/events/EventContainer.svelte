@@ -3,6 +3,10 @@
     import { store } from '$lib/game/store.svelte';
     import ReactionGame from './ReactionGame.svelte';
     import DecisionGame from './DecisionGame.svelte';
+    import MemoryGame from './MemoryGame.svelte';
+    import TypingGame from './TypingGame.svelte';
+    import PatternGame from './PatternGame.svelte';
+    import SpottingGame from './SpottingGame.svelte';
     
     interface Props {
         eventConfig: RandomEventConfig;
@@ -107,9 +111,37 @@
                 onComplete={handleGameComplete}
                 onFail={handleGameFail}
             />
+        {:else if eventConfig.mechanic === 'memory'}
+            <MemoryGame
+                config={eventConfig}
+                onScoreUpdate={handleScoreUpdate}
+                onComplete={handleGameComplete}
+                onFail={handleGameFail}
+            />
+        {:else if eventConfig.mechanic === 'typing'}
+            <TypingGame
+                config={eventConfig}
+                onScoreUpdate={handleScoreUpdate}
+                onComplete={handleGameComplete}
+                onFail={handleGameFail}
+            />
+        {:else if eventConfig.mechanic === 'pattern'}
+            <PatternGame
+                config={eventConfig}
+                onScoreUpdate={handleScoreUpdate}
+                onComplete={handleGameComplete}
+                onFail={handleGameFail}
+            />
+        {:else if eventConfig.mechanic === 'spotting'}
+            <SpottingGame
+                config={eventConfig}
+                onScoreUpdate={handleScoreUpdate}
+                onComplete={handleGameComplete}
+                onFail={handleGameFail}
+            />
         {:else}
             <div class="placeholder">
-                <p>🎮 {eventConfig.mechanic} mechanic coming soon!</p>
+                <p>🎮 Unknown mechanic type</p>
                 <button class="abandon-button" onclick={handleAbandon}>Close</button>
             </div>
         {/if}

@@ -20,6 +20,14 @@ import {
     VERCEL_BUILD_QUEUE_EVENT
 } from './events/decision';
 
+import { RUBBER_DUCK_EVENT } from './events/memory';
+
+import { MECH_KEYBOARD_EVENT, STACK_OVERFLOW_EVENT } from './events/typing';
+
+import { PAIR_PROGRAMMING_EVENT, ALGORITHM_CHALLENGE_EVENT } from './events/pattern';
+
+import { HALLUCINATION_HUNT_EVENT, CODE_REVIEW_EVENT } from './events/spotting';
+
 // ========================================
 // Legacy Events (Migrated from v0.5)
 // Keeping ONE legacy event as requested - "Bug Bounty" fits best as it's thematic
@@ -66,6 +74,21 @@ class EventRegistryImpl {
         this.registerEvent(MERGE_CONFLICT_EVENT);
         this.registerEvent(DEPENDABOT_FLOOD_EVENT);
         this.registerEvent(VERCEL_BUILD_QUEUE_EVENT);
+        
+        // === MEMORY EVENTS ===
+        this.registerEvent(RUBBER_DUCK_EVENT);
+        
+        // === TYPING EVENTS ===
+        this.registerEvent(MECH_KEYBOARD_EVENT);
+        this.registerEvent(STACK_OVERFLOW_EVENT);
+        
+        // === PATTERN EVENTS ===
+        this.registerEvent(PAIR_PROGRAMMING_EVENT);
+        this.registerEvent(ALGORITHM_CHALLENGE_EVENT);
+        
+        // === SPOTTING EVENTS ===
+        this.registerEvent(HALLUCINATION_HUNT_EVENT);
+        this.registerEvent(CODE_REVIEW_EVENT);
     }
 
     registerEvent(event: RandomEventConfig): void {
