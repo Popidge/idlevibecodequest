@@ -79,13 +79,16 @@ export interface DecisionEvent extends BaseRandomEvent {
         // Legacy events have no interaction - just accept/decline
         isLegacy: boolean;
         // For future: multiple choice questions
-        choices?: {
-            id: string;
-            text: string;
-            isCorrect: boolean;
-        }[];
-        // Time limit to make decision (0 = no limit)
-        timeLimit?: number;
+        choices?: Array<{
+            prompt: string;
+            choices: Array<{
+                id: string;
+                text: string;
+                isCorrect: boolean;
+            }>;
+        }>;
+        // Time limit per decision round in seconds
+        timePerDecision?: number;
     };
 }
 

@@ -236,24 +236,27 @@ class GameStore {
     // ========================================
 
     get effectiveCashMultiplier() {
-        // Base + tech tree modifiers (includes prestige path bonuses via tech tree nodes)
+        // Base + tech tree modifiers + event buffs
         const base = 1;
         const techTreeBonus = this.activeModifiers.moneyMultiplier;
-        return base + techTreeBonus;
+        const buffMultiplier = this.eventBuffMultipliers.cashMultiplier;
+        return (base + techTreeBonus) * buffMultiplier;
     }
 
     get effectiveLocMultiplier() {
-        // Base + tech tree modifiers (includes prestige path bonuses via tech tree nodes)
+        // Base + tech tree modifiers + event buffs
         const base = 1;
         const techTreeBonus = this.activeModifiers.locMultiplier;
-        return base + techTreeBonus;
+        const buffMultiplier = this.eventBuffMultipliers.locMultiplier;
+        return (base + techTreeBonus) * buffMultiplier;
     }
 
     get effectiveCredMultiplier() {
-        // Base + tech tree modifiers (includes prestige path bonuses via tech tree nodes)
+        // Base + tech tree modifiers + event buffs
         const base = 1;
         const techTreeBonus = this.activeModifiers.credMultiplier;
-        return base + techTreeBonus;
+        const buffMultiplier = this.eventBuffMultipliers.credMultiplier;
+        return (base + techTreeBonus) * buffMultiplier;
     }
 
     // ========================================
@@ -262,19 +265,21 @@ class GameStore {
     // ========================================
 
     get effectiveClickPower() {
-        // LoC/click: (base + flat) × loc multiplier
+        // LoC/click: (base + flat from tech tree + flat from buffs) × loc multiplier
         const base = this.baseClickPower;
-        const flatBonus = base * this.activeModifiers.locPerClickFlat;
+        const techTreeFlat = base * this.activeModifiers.locPerClickFlat;
+        const buffFlat = this.eventBuffMultipliers.locPerClickFlat;
         // effectiveLocMultiplier already includes (1 + locMultiplier), so no extra multiplier needed
-        return Math.floor((base + flatBonus) * this.effectiveLocMultiplier);
+        return Math.floor((base + techTreeFlat + buffFlat) * this.effectiveLocMultiplier);
     }
 
     get effectivePassiveLocRate() {
-        // LoC/sec: (base + flat) × loc multiplier
+        // LoC/sec: (base + flat from tech tree + flat from buffs) × loc multiplier
         const base = this.basePassiveLocRate;
-        const flatBonus = base * this.activeModifiers.passiveLocRateFlat;
+        const techTreeFlat = base * this.activeModifiers.passiveLocRateFlat;
+        const buffFlat = this.eventBuffMultipliers.passiveLocRateFlat;
         // effectiveLocMultiplier already includes (1 + locMultiplier), so no extra multiplier needed
-        return (base + flatBonus) * this.effectiveLocMultiplier;
+        return (base + techTreeFlat + buffFlat) * this.effectiveLocMultiplier;
     }
 
     get effectivePassiveIncome() {
@@ -340,6 +345,39 @@ class GameStore {
         const base = 1;
         const techTreeBonus = this.activeModifiers.prestigePointMultiplier;
         return base + techTreeBonus;
+    }
+
+    // ========================================
+    // EVENT BUFF MULTIPLIERS (v0.6)
+    // ========================================
+    
+    /**
+     * Get active buff multipliers from event rewards
+     */
+    get eventBuffMultipliers() {
+        const now = Date.now();
+        const activeBuffs = this.activeBuffs.filter(b => b.expiresAt > now);
+        
+        return {
+            cashMultiplier: 1 + activeBuffs
+                .filter(b => b.type === 'cashMultiplier')
+                .reduce((sum, b) => sum + (b.multiplier * 0.5), 0), // 50% of base per buff
+            locMultiplier: 1 + activeBuffs
+                .filter(b => b.type === 'locMultiplier')
+                .reduce((sum, b) => sum + (b.multiplier * 0.3), 0), // 30% of base per buff
+            credMultiplier: 1 + activeBuffs
+                .filter(b => b.type === 'credMultiplier')
+                .reduce((sum, b) => sum + (b.multiplier * 0.5), 0), // 50% of base per buff
+            locPerClickFlat: activeBuffs
+                .filter(b => b.type === 'locPerClick')
+                .reduce((sum, b) => sum + (b.multiplier * 2), 0), // +2 LoC per click per buff
+            passiveLocRateFlat: activeBuffs
+                .filter(b => b.type === 'passiveLocRate')
+                .reduce((sum, b) => sum + (b.multiplier * 5), 0), // +5 LoC/sec per buff
+            delegationMultiplier: 1 + activeBuffs
+                .filter(b => b.type === 'delegationMultiplier')
+                .reduce((sum, b) => sum + (b.multiplier * 0.4), 0) // 40% of base per buff
+        };
     }
     
     // Phase 2: Find cheapest purchasable upgrade
@@ -1103,48 +1141,91 @@ class GameStore {
 
     /**
      * Complete the random event - grant rewards and close modal
+     * @param score Player's score from the mini-game
+     * @param maxScore Maximum possible score
      */
-    completeRandomEvent() {
+    completeRandomEvent(score: number = 0, maxScore: number = 0) {
         if (!this.activeRandomEvent) return;
 
-        // Grant all rewards
+        // Calculate performance percentage
+        const performance = maxScore > 0 ? score / maxScore : 1.0;
+
+        // Grant all rewards based on performance
         const event = this.activeRandomEvent;
         let totalCashReward = 0;
+        let totalLocReward = 0;
+        let totalCredReward = 0;
         let rewardMessage = '';
 
         for (const reward of event.rewards) {
-            const amount = reward.baseAmount;
+            // Calculate actual reward amount based on scaling mode
+            let amount = reward.baseAmount;
+            
+            switch (reward.scalingMode) {
+                case 'performance':
+                    amount = reward.baseAmount * performance;
+                    break;
+                case 'tiered':
+                    // Tiered rewards: 90%+ = 2x, 70-89% = 1x, 50-69% = 0.5x, <50% = 0.25x
+                    if (performance >= 0.9) amount = reward.baseAmount * 2;
+                    else if (performance >= 0.7) amount = reward.baseAmount * 1;
+                    else if (performance >= 0.5) amount = reward.baseAmount * 0.5;
+                    else amount = reward.baseAmount * 0.25;
+                    break;
+                case 'flat':
+                default:
+                    // Flat amount, no scaling
+                    break;
+            }
             
             switch (reward.type) {
                 case 'cash':
-                    this.gameState.resources.money += amount;
-                    totalCashReward += amount;
+                    this.gameState.resources.money += Math.floor(amount);
+                    totalCashReward += Math.floor(amount);
                     break;
                 case 'loc':
-                    this.gameState.resources.loc += amount;
+                    this.gameState.resources.loc += Math.floor(amount);
+                    totalLocReward += Math.floor(amount);
                     break;
                 case 'cred':
-                    this.gameState.resources.cred += amount;
+                    this.gameState.resources.cred += Math.floor(amount);
+                    totalCredReward += Math.floor(amount);
                     break;
-                // Temporary buffs - handled below
+                // Temporary buffs - apply with performance multiplier
                 default:
-                    this.addBuff(event.id, reward, 1.0);
+                    this.addBuff(event.id, reward, performance);
                     break;
             }
         }
 
-        if (totalCashReward > 0) {
-            rewardMessage = `+$${totalCashReward.toLocaleString()} cash`;
+        // Build reward message
+        const rewards: string[] = [];
+        if (totalCashReward > 0) rewards.push(`$${totalCashReward.toLocaleString()}`);
+        if (totalLocReward > 0) rewards.push(`${totalLocReward.toLocaleString()} LoC`);
+        if (totalCredReward > 0) rewards.push(`${totalCredReward} Cred`);
+        
+        if (rewards.length > 0) {
+            rewardMessage = rewards.join(', ');
         }
 
+        // Performance indicator
+        let performanceEmoji = '✅';
+        if (performance >= 0.9) performanceEmoji = '🏆';
+        else if (performance >= 0.7) performanceEmoji = '✨';
+        else if (performance >= 0.5) performanceEmoji = '👍';
+        else if (performance < 0.3) performanceEmoji = '💪';
+
         this.showNotification(
-            rewardMessage ? `💰 ${rewardMessage} from ${event.name}!` : `✅ Completed ${event.name}!`,
+            rewardMessage 
+                ? `${performanceEmoji} ${event.name}: ${rewardMessage} (${Math.round(performance * 100)}%)` 
+                : `${performanceEmoji} Completed ${event.name}! (${Math.round(performance * 100)}%)`,
             'success'
         );
 
         // Close modal and clear event
         this.showRandomEventModal = false;
         this.activeRandomEvent = null;
+        this.activeEventState = null;
         this.randomEventState = {
             active: false,
             eventId: null,
@@ -1159,6 +1240,22 @@ class GameStore {
     closeRandomEventModal() {
         this.showRandomEventModal = false;
         // Event was already ended by engageRandomEvent, cooldown is set
+    }
+
+    /**
+     * Abandon an active event - cancel it without rewards
+     */
+    abandonRandomEvent() {
+        this.activeEventState = null;
+        this.showRandomEventModal = false;
+        this.activeRandomEvent = null;
+        this.randomEventState = {
+            active: false,
+            eventId: null,
+            timer: 0,
+            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+        };
+        this.showNotification('Event abandoned.', 'info');
     }
 
     // ========================================

@@ -1,21 +1,49 @@
 <script lang="ts">
     import { store, formatMoney } from '$lib/game/store.svelte';
-    import type { EventReward } from '$lib/game/event-types';
+    import type { EventReward, DecisionEvent } from '$lib/game/event-types';
+    import EventContainer from './events/EventContainer.svelte';
+
+    // Track whether we're showing the interactive game
+    let showGame = $state(false);
 
     function handleBackdropClick(event: MouseEvent) {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget && !showGame) {
             store.closeRandomEventModal();
         }
     }
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
-            store.closeRandomEventModal();
+            if (showGame) {
+                showGame = false;
+            } else {
+                store.closeRandomEventModal();
+            }
         }
     }
 
     function handleEngage() {
-        store.completeRandomEvent();
+        const event = store.activeRandomEvent;
+        if (!event) return;
+
+        // Check if this is a legacy decision event
+        if (event.mechanic === 'decision' && (event as DecisionEvent).config.isLegacy) {
+            // Legacy event - just grant rewards immediately
+            store.completeRandomEvent();
+        } else {
+            // Interactive event - show the game
+            showGame = true;
+        }
+    }
+
+    function handleGameComplete() {
+        showGame = false;
+        // Event completion is handled by EventContainer calling store.completeRandomEvent
+    }
+
+    function handleGameAbandon() {
+        showGame = false;
+        store.abandonRandomEvent();
     }
 
     function formatReward(reward: EventReward): string {
@@ -31,9 +59,9 @@
             case 'credMultiplier':
                 return `${(reward.baseAmount * 100).toFixed(0)}% ${reward.type.replace('Multiplier', '')} boost`;
             case 'locPerClick':
-                return `${(reward.baseAmount * 100).toFixed(0)}% LoC/click boost`;
+                return `+${reward.baseAmount} LoC/click`;
             case 'passiveLocRate':
-                return `${(reward.baseAmount * 100).toFixed(0)}% LoC/sec boost`;
+                return `+${reward.baseAmount} LoC/sec`;
             case 'delegationMultiplier':
                 return `${(reward.baseAmount * 100).toFixed(0)}% delegation boost`;
             default:
@@ -43,6 +71,12 @@
 
     function isTemporaryBuff(reward: EventReward): boolean {
         return ['cashMultiplier', 'locMultiplier', 'credMultiplier', 'locPerClick', 'passiveLocRate', 'delegationMultiplier'].includes(reward.type);
+    }
+
+    function isLegacyEvent(): boolean {
+        const event = store.activeRandomEvent;
+        if (!event) return false;
+        return event.mechanic === 'decision' && (event as DecisionEvent).config.isLegacy;
     }
 </script>
 
@@ -54,34 +88,52 @@
     <!-- svelte-ignore a11y_interactive_supports_focus -->
     <div class="modal-backdrop" onclick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Random Event">
         <div class="modal-content" onclick={(e) => e.stopPropagation()}>
-            <div class="modal-header">┌─ RANDOM EVENT ───────────┐</div>
-            <div class="modal-body">
-                <div class="event-icon">⚡</div>
-                <h2 class="event-name">{store.activeRandomEvent.name}</h2>
-                <p class="event-description">{store.activeRandomEvent.description}</p>
-                <div class="event-reward">
-                    <span class="reward-label">Rewards:</span>
-                    <div class="rewards-list">
-                        {#each store.activeRandomEvent.rewards as reward}
-                            <div class="reward-item" class:temporary={isTemporaryBuff(reward)}>
-                                <span class="reward-value">{formatReward(reward)}</span>
-                                {#if isTemporaryBuff(reward)}
-                                    <span class="buff-duration">⏱️ {Math.floor((reward.duration || 300) / 60)}m</span>
-                                {/if}
-                            </div>
-                        {/each}
+            {#if showGame}
+                <!-- Interactive Game Mode -->
+                <EventContainer
+                    eventConfig={store.activeRandomEvent}
+                    onComplete={handleGameComplete}
+                    onAbandon={handleGameAbandon}
+                />
+            {:else}
+                <!-- Preview/Confirmation Mode -->
+                <div class="modal-header">┌─ RANDOM EVENT ───────────┐</div>
+                <div class="modal-body">
+                    <div class="event-icon">⚡</div>
+                    <h2 class="event-name">{store.activeRandomEvent.name}</h2>
+                    <p class="event-description">{store.activeRandomEvent.description}</p>
+                    
+                    <!-- Show mechanic badge for interactive events -->
+                    {#if !isLegacyEvent()}
+                        <div class="mechanic-badge">
+                            🎮 {store.activeRandomEvent.mechanic} mini-game
+                        </div>
+                    {/if}
+                    
+                    <div class="event-reward">
+                        <span class="reward-label">Rewards:</span>
+                        <div class="rewards-list">
+                            {#each store.activeRandomEvent.rewards as reward}
+                                <div class="reward-item" class:temporary={isTemporaryBuff(reward)}>
+                                    <span class="reward-value">{formatReward(reward)}</span>
+                                    {#if isTemporaryBuff(reward)}
+                                        <span class="buff-duration">⏱️ {Math.floor((reward.duration || 300) / 60)}m</span>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="action-btn cancel" onclick={() => store.closeRandomEventModal()}>
-                    CLOSE
-                </button>
-                <button class="action-btn confirm" onclick={handleEngage}>
-                    ENGAGE
-                </button>
-            </div>
-            <div class="modal-corner">└─────────────────────────┘</div>
+                <div class="modal-footer">
+                    <button class="action-btn cancel" onclick={() => store.closeRandomEventModal()}>
+                        CLOSE
+                    </button>
+                    <button class="action-btn confirm" onclick={handleEngage}>
+                        {isLegacyEvent() ? 'CLAIM' : 'PLAY'}
+                    </button>
+                </div>
+                <div class="modal-corner">└─────────────────────────┘</div>
+            {/if}
         </div>
     </div>
 {/if}
@@ -104,7 +156,9 @@
         background-color: var(--panel-bg, #0f0f0f);
         border: 1px solid var(--border-color, #ffb000);
         min-width: 360px;
-        max-width: 420px;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
     }
 
     .modal-header {
@@ -152,6 +206,18 @@
         font-size: 14px;
         margin: 0 0 20px;
         line-height: 1.5;
+    }
+
+    .mechanic-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        background-color: rgba(0, 204, 255, 0.2);
+        border: 1px solid var(--text-cyan, #00ccff);
+        border-radius: 4px;
+        color: var(--text-cyan, #00ccff);
+        font-size: 12px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
     }
 
     .event-reward {

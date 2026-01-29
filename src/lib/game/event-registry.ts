@@ -8,6 +8,18 @@ import type {
     RewardType
 } from './event-types';
 
+import {
+    VIRAL_TWEET_EVENT,
+    NPM_SPEEDRUN_EVENT,
+    CONTEXT_WINDOW_EVENT
+} from './events/reaction';
+
+import {
+    MERGE_CONFLICT_EVENT,
+    DEPENDABOT_FLOOD_EVENT,
+    VERCEL_BUILD_QUEUE_EVENT
+} from './events/decision';
+
 // ========================================
 // Legacy Events (Migrated from v0.5)
 // Keeping ONE legacy event as requested - "Bug Bounty" fits best as it's thematic
@@ -44,7 +56,16 @@ class EventRegistryImpl {
     constructor() {
         // Register all events
         this.registerEvent(LEGACY_EVENT);
-        // Future events will be registered here
+        
+        // === REACTION EVENTS ===
+        this.registerEvent(VIRAL_TWEET_EVENT);
+        this.registerEvent(NPM_SPEEDRUN_EVENT);
+        this.registerEvent(CONTEXT_WINDOW_EVENT);
+        
+        // === DECISION EVENTS ===
+        this.registerEvent(MERGE_CONFLICT_EVENT);
+        this.registerEvent(DEPENDABOT_FLOOD_EVENT);
+        this.registerEvent(VERCEL_BUILD_QUEUE_EVENT);
     }
 
     registerEvent(event: RandomEventConfig): void {
@@ -64,6 +85,10 @@ class EventRegistryImpl {
 
     getEventsByTag(tag: string): RandomEventConfig[] {
         return this.getAllEvents().filter(e => e.tags.includes(tag));
+    }
+
+    getEventsByMechanic(mechanic: string): RandomEventConfig[] {
+        return this.getAllEvents().filter(e => e.mechanic === mechanic);
     }
 
     getRandomEvent(): RandomEventConfig {
