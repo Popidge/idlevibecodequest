@@ -1,5 +1,6 @@
 <script lang="ts">
     import { store, formatMoney } from '$lib/game/store.svelte';
+    import type { EventReward } from '$lib/game/event-types';
 
     function handleBackdropClick(event: MouseEvent) {
         if (event.target === event.currentTarget) {
@@ -15,6 +16,33 @@
 
     function handleEngage() {
         store.completeRandomEvent();
+    }
+
+    function formatReward(reward: EventReward): string {
+        switch (reward.type) {
+            case 'cash':
+                return `$${reward.baseAmount.toLocaleString()}`;
+            case 'loc':
+                return `${reward.baseAmount.toLocaleString()} LoC`;
+            case 'cred':
+                return `${reward.baseAmount} Cred`;
+            case 'cashMultiplier':
+            case 'locMultiplier':
+            case 'credMultiplier':
+                return `${(reward.baseAmount * 100).toFixed(0)}% ${reward.type.replace('Multiplier', '')} boost`;
+            case 'locPerClick':
+                return `${(reward.baseAmount * 100).toFixed(0)}% LoC/click boost`;
+            case 'passiveLocRate':
+                return `${(reward.baseAmount * 100).toFixed(0)}% LoC/sec boost`;
+            case 'delegationMultiplier':
+                return `${(reward.baseAmount * 100).toFixed(0)}% delegation boost`;
+            default:
+                return `${reward.baseAmount}`;
+        }
+    }
+
+    function isTemporaryBuff(reward: EventReward): boolean {
+        return ['cashMultiplier', 'locMultiplier', 'credMultiplier', 'locPerClick', 'passiveLocRate', 'delegationMultiplier'].includes(reward.type);
     }
 </script>
 
@@ -32,9 +60,17 @@
                 <h2 class="event-name">{store.activeRandomEvent.name}</h2>
                 <p class="event-description">{store.activeRandomEvent.description}</p>
                 <div class="event-reward">
-                    <span class="reward-label">Reward:</span>
-                    <span class="reward-value">{formatMoney(store.activeRandomEvent.reward)}</span>
-                    <span class="reward-note">(Flat amount - unaffected by multipliers)</span>
+                    <span class="reward-label">Rewards:</span>
+                    <div class="rewards-list">
+                        {#each store.activeRandomEvent.rewards as reward}
+                            <div class="reward-item" class:temporary={isTemporaryBuff(reward)}>
+                                <span class="reward-value">{formatReward(reward)}</span>
+                                {#if isTemporaryBuff(reward)}
+                                    <span class="buff-duration">⏱️ {Math.floor((reward.duration || 300) / 60)}m</span>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -125,18 +161,44 @@
         border-radius: 4px;
     }
 
+    .rewards-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .reward-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background-color: rgba(0, 255, 0, 0.1);
+        border: 1px solid var(--border-color, #00ff00);
+        border-radius: 4px;
+    }
+
+    .reward-item.temporary {
+        background-color: rgba(0, 204, 255, 0.1);
+        border-color: var(--text-cyan, #00ccff);
+    }
+
+    .buff-duration {
+        color: var(--text-cyan, #00ccff);
+        font-size: 11px;
+    }
+
     .reward-label {
         color: var(--text-dim, #008800);
         font-size: 12px;
         text-transform: uppercase;
-        margin-right: 8px;
     }
 
     .reward-value {
         color: var(--text-primary, #00ff00);
-        font-size: 24px;
+        font-size: 16px;
         font-weight: bold;
-        margin-right: 8px;
     }
 
     .reward-note {

@@ -158,49 +158,15 @@ export const TECH_TREE_COSTS = [1, 3, 5, 10, 15, 20, 25, 30, 35, 40] as const;
 
 // ========================================
 // v0.5: Random Event System Constants
+// NOTE: Events are now defined in event-registry.ts with the new interactive system
+// Only the Bug Bounty legacy event is kept for backward compatibility
 // ========================================
-
-export const RANDOM_EVENTS = [
-    {
-        id: 'bounty',
-        name: 'Bug Bounty',
-        description: 'A critical bug was found in production! The client is offering a bounty for a quick fix.',
-        reward: 1000
-    },
-    {
-        id: 'client-meeting',
-        name: 'Client Bonus',
-        description: 'The client loved your demo! They\'re throwing a bonus your way for the "vibe coding" approach.',
-        reward: 1000
-    },
-    {
-        id: 'coffee-break',
-        name: 'Coffee Run',
-        description: 'The office coffee machine is broken. Someone left a $1000 "emergency coffee fund" on the table.',
-        reward: 1000
-    },
-    {
-        id: 'code-review',
-        name: 'Helpful Review',
-        description: 'A senior engineer found your code so clean they\'re sending over a finders fee.',
-        reward: 1000
-    },
-    {
-        id: 'hotfix',
-        name: 'Emergency Hotfix',
-        description: 'A production outage! Deploy a hotfix and collect the crisis bonus.',
-        reward: 1000
-    }
-] as const;
 
 export const RANDOM_EVENT_CONFIG = {
     TRIGGER_CHANCE: 300,       // 1 in 300 chance per second
     NOTIFICATION_DURATION: 30, // Show notification for 30 seconds
     COOLDOWN_DURATION: 60      // Cooldown for 60 seconds after event ends
 } as const;
-
-// Type for random events
-export type RandomEventType = (typeof RANDOM_EVENTS)[number];
 
 // Minimal TechTree interface for type casting
 interface TechTree {

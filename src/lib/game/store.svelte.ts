@@ -1,7 +1,9 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, RANDOM_EVENTS, RANDOM_EVENT_CONFIG, type Upgrade, type Project, type RandomEventType } from './constants';
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, type Upgrade, type Project } from './constants';
 import type { GameState, FloatText, Notification, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers, RandomEventState } from './types';
+import type { ActiveEventState, ActiveBuff, RandomEventConfig } from './event-types';
+import { EVENT_REGISTRY, RANDOM_EVENT_CONFIG } from './event-registry';
 import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
 
 // Default game state
@@ -109,7 +111,11 @@ class GameStore {
         cooldown: 0
     });
     showRandomEventModal = $state(false);
-    activeRandomEvent = $state<RandomEventType | null>(null);
+    activeRandomEvent = $state<RandomEventConfig | null>(null);
+    
+    // v0.6: Enhanced Random Event System
+    activeEventState = $state<ActiveEventState | null>(null);
+    activeBuffs = $state<ActiveBuff[]>([]);
 
     // ========================================
     // ACTIVE MODIFIERS - Single Source of Truth
@@ -1046,14 +1052,13 @@ class GameStore {
      * Trigger a random event - shows notification for 30 seconds
      */
     triggerRandomEvent() {
-        // Pick a random event
-        const eventIndex = Math.floor(Math.random() * RANDOM_EVENTS.length);
-        const event = RANDOM_EVENTS[eventIndex];
+        // Get random event from registry
+        const event = EVENT_REGISTRY.getRandomEvent();
 
         this.randomEventState = {
             active: true,
             eventId: event.id,
-            timer: RANDOM_EVENT_CONFIG.NOTIFICATION_DURATION,
+            timer: event.notificationDuration,
             cooldown: 0
         };
         this.activeRandomEvent = event;
@@ -1097,15 +1102,45 @@ class GameStore {
     }
 
     /**
-     * Complete the random event - grant reward and close modal
+     * Complete the random event - grant rewards and close modal
      */
     completeRandomEvent() {
         if (!this.activeRandomEvent) return;
 
-        // Grant reward directly to money (unaffected by multipliers)
-        this.gameState.resources.money += this.activeRandomEvent.reward;
+        // Grant all rewards
+        const event = this.activeRandomEvent;
+        let totalCashReward = 0;
+        let rewardMessage = '';
 
-        this.showNotification(`💰 +$${this.activeRandomEvent.reward.toLocaleString()} from ${this.activeRandomEvent.name}!`, 'success');
+        for (const reward of event.rewards) {
+            const amount = reward.baseAmount;
+            
+            switch (reward.type) {
+                case 'cash':
+                    this.gameState.resources.money += amount;
+                    totalCashReward += amount;
+                    break;
+                case 'loc':
+                    this.gameState.resources.loc += amount;
+                    break;
+                case 'cred':
+                    this.gameState.resources.cred += amount;
+                    break;
+                // Temporary buffs - handled below
+                default:
+                    this.addBuff(event.id, reward, 1.0);
+                    break;
+            }
+        }
+
+        if (totalCashReward > 0) {
+            rewardMessage = `+$${totalCashReward.toLocaleString()} cash`;
+        }
+
+        this.showNotification(
+            rewardMessage ? `💰 ${rewardMessage} from ${event.name}!` : `✅ Completed ${event.name}!`,
+            'success'
+        );
 
         // Close modal and clear event
         this.showRandomEventModal = false;
@@ -1124,6 +1159,105 @@ class GameStore {
     closeRandomEventModal() {
         this.showRandomEventModal = false;
         // Event was already ended by engageRandomEvent, cooldown is set
+    }
+
+    // ========================================
+    // v0.6: Buff System Methods
+    // ========================================
+
+    /**
+     * Add a temporary buff from an event reward
+     */
+    addBuff(sourceEventId: string, reward: import('./event-types').EventReward, performanceMultiplier: number) {
+        const duration = reward.duration || 300; // Default 5 minutes
+        const expiresAt = Date.now() + (duration * 1000);
+        
+        const buff: ActiveBuff = {
+            id: `buff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            sourceEventId,
+            type: reward.type,
+            multiplier: performanceMultiplier,
+            expiresAt,
+            name: this.getBuffDisplayName(reward.type)
+        };
+        
+        this.activeBuffs = [...this.activeBuffs, buff];
+        
+        // Set up automatic expiration
+        setTimeout(() => {
+            this.removeBuff(buff.id);
+        }, duration * 1000);
+    }
+
+    /**
+     * Remove a buff by ID
+     */
+    removeBuff(buffId: string) {
+        this.activeBuffs = this.activeBuffs.filter(b => b.id !== buffId);
+    }
+
+    /**
+     * Get active buffs that haven't expired
+     */
+    getActiveBuffs(): ActiveBuff[] {
+        const now = Date.now();
+        return this.activeBuffs.filter(b => b.expiresAt > now);
+    }
+
+    /**
+     * Get display name for buff type
+     */
+    private getBuffDisplayName(type: import('./event-types').RewardType): string {
+        const names: Record<import('./event-types').RewardType, string> = {
+            'cash': 'Cash Bonus',
+            'loc': 'LoC Bonus',
+            'cred': 'Cred Bonus',
+            'cashMultiplier': 'Cash Multiplier',
+            'locMultiplier': 'LoC Multiplier',
+            'credMultiplier': 'Cred Multiplier',
+            'locPerClick': 'Click Power',
+            'passiveLocRate': 'Passive Generation',
+            'delegationMultiplier': 'Delegation Efficiency'
+        };
+        return names[type] || 'Unknown Buff';
+    }
+
+    // ========================================
+    // v0.6: Debug Event Trigger
+    // ========================================
+
+    /**
+     * Debug method to trigger a specific random event by ID
+     */
+    debugTriggerEvent(eventId: string): boolean {
+        const event = EVENT_REGISTRY.getEvent(eventId);
+        if (!event) {
+            console.warn(`[DEBUG] Event '${eventId}' not found`);
+            return false;
+        }
+
+        // Clear any existing event/cooldown
+        this.randomEventState = {
+            active: true,
+            eventId: event.id,
+            timer: event.notificationDuration,
+            cooldown: 0
+        };
+        this.activeRandomEvent = event;
+
+        this.showNotification(`⚡ DEBUG EVENT: ${event.name}!`, 'warning');
+        return true;
+    }
+
+    /**
+     * Get all available event IDs for debug selection
+     */
+    getDebugEventList(): { id: string; name: string; mechanic: string }[] {
+        return EVENT_REGISTRY.getAllEvents().map(e => ({
+            id: e.id,
+            name: e.name,
+            mechanic: e.mechanic
+        }));
     }
 
     // Theme management

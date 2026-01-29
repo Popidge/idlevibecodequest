@@ -21,6 +21,8 @@
     import TuningModal from './lib/components/TuningModal.svelte';
     // v0.5: Random Event modal
     import RandomEventModal from './lib/components/RandomEventModal.svelte';
+    // v0.6: Debug Event Trigger
+    import DebugEventModal from './lib/components/DebugEventModal.svelte';
     // Theme system
     import ThemeToggle from './lib/components/ThemeToggle.svelte';
     import { store } from './lib/game/store.svelte';
@@ -34,6 +36,7 @@
     import MobileInfoTab from './lib/components/mobile/MobileInfoTab.svelte';
 
     let showTuning = $state(false);
+    let showDebugEvents = $state(false);
 
     onMount(() => {
         store.init();
@@ -41,6 +44,10 @@
 
     function toggleTuning() {
         showTuning = !showTuning;
+    }
+
+    function toggleDebugEvents() {
+        showDebugEvents = !showDebugEvents;
     }
 
     function grantDebugResources() {
@@ -70,6 +77,9 @@
                 </button>
                 <button class="debug-btn tuning-btn" onclick={toggleTuning} title="Open tuning page">
                     ⚙️ TUNING
+                </button>
+                <button class="debug-btn events-btn" onclick={toggleDebugEvents} title="Trigger random events">
+                    🎲 EVENTS
                 </button>
             </div>
         {/if}
@@ -103,6 +113,9 @@
                 </button>
                 <button class="debug-btn tuning-btn" onclick={toggleTuning} title="Open tuning page">
                     ⚙️ TUNING
+                </button>
+                <button class="debug-btn events-btn" onclick={toggleDebugEvents} title="Trigger random events">
+                    🎲 EVENTS
                 </button>
             </div>
         {/if}
@@ -157,6 +170,11 @@
     <!-- v0.4: Tuning modal (debug only) -->
     {#if isDebugMode() && showTuning}
         <TuningModal onClose={toggleTuning} />
+    {/if}
+
+    <!-- v0.6: Debug Event Trigger modal -->
+    {#if isDebugMode() && showDebugEvents}
+        <DebugEventModal onClose={toggleDebugEvents} />
     {/if}
 </div>
 
@@ -325,6 +343,16 @@
 
     .tuning-btn:hover {
         background-color: var(--text-cyan, #00ccff);
+        color: var(--panel-bg, #0f0f0f);
+    }
+
+    .events-btn {
+        border-color: var(--text-amber, #ffb000);
+        color: var(--text-amber, #ffb000);
+    }
+
+    .events-btn:hover {
+        background-color: var(--text-amber, #ffb000);
         color: var(--panel-bg, #0f0f0f);
     }
 
