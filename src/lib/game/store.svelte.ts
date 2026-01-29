@@ -1386,7 +1386,7 @@ class GameStore {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.5 initialized!');
+        console.log('Idle Vibe Code Quest v0.6 initialized!');
     }
 }
 
