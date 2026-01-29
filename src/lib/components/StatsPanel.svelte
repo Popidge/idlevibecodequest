@@ -118,6 +118,13 @@
                 </span>
             </div>
         </div>
+
+        <!-- How to Play Button -->
+        <div class="howto-button-container">
+            <button class="howto-btn" onclick={() => store.openHowToPlay()}>
+                📖 HOW TO PLAY
+            </button>
+        </div>
     </div>
 </div>
 
@@ -310,6 +317,34 @@
         border-top: 2px solid var(--text-amber, #ffb000);
     }
 
+    /* How to Play Button */
+    .howto-button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+        padding-top: 12px;
+    }
+
+    .howto-btn {
+        background-color: var(--panel-bg, #0f0f0f);
+        color: var(--text-cyan, #00ccff);
+        border: 1px solid var(--text-cyan, #00ccff);
+        padding: 8px 16px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 4px;
+    }
+
+    .howto-btn:hover {
+        background-color: var(--text-cyan, #00ccff);
+        color: var(--panel-bg, #0f0f0f);
+    }
+
     .prestige-summary-label {
         color: var(--text-amber, #ffb000);
         font-size: 9px;
@@ -389,6 +424,16 @@
             padding-top: 6px;
         }
 
+        .howto-button-container {
+            margin-top: 8px;
+            padding-top: 8px;
+        }
+
+        .howto-btn {
+            font-size: 9px;
+            padding: 6px 12px;
+        }
+
         .prestige-summary-label {
             font-size: 8px;
         }
@@ -448,6 +493,17 @@
         .prestige-summary {
             margin-top: 16px;
             padding-top: 12px;
+        }
+
+        .howto-button-container {
+            margin-top: 20px;
+            padding-top: 16px;
+        }
+
+        .howto-btn {
+            font-size: 13px;
+            padding: 12px 20px;
+            min-height: 44px;
         }
 
         .prestige-summary-value .points {

@@ -21,6 +21,8 @@
     import TuningModal from './lib/components/TuningModal.svelte';
     // v0.5: Random Event modal
     import RandomEventModal from './lib/components/RandomEventModal.svelte';
+    // How to Play modal
+    import HowToPlayModal from './lib/components/HowToPlayModal.svelte';
     // v0.6: Debug Event Trigger
     import DebugEventModal from './lib/components/DebugEventModal.svelte';
     // Theme system
@@ -166,6 +168,8 @@
     <TechTreeModal />
     <!-- v0.5: Random Event Modal -->
     <RandomEventModal />
+    <!-- How to Play Modal -->
+    <HowToPlayModal />
 
     <!-- v0.4: Tuning modal (debug only) -->
     {#if isDebugMode() && showTuning}

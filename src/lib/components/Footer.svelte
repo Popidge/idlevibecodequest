@@ -5,7 +5,9 @@
 <div class="footer">
     <div class="footer-content">
         <span class="auto-save-text">Auto saves every 30s</span>
-        <span class="auto-save-text">Vibe Coded by JT</span>
+        <a class="github-link" href="https://github.com/popidge/idlevibecodequest" target="_blank" rel="noopener noreferrer">
+            Vibe Coded by JT
+        </a>
     </div>
 </div>
 
@@ -29,6 +31,16 @@
 
     .auto-save-text {
         color: var(--text-dim, #008800);
+    }
+
+    .github-link {
+        color: var(--text-dim, #008800);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .github-link:hover {
+        color: var(--text-primary, #00ff00);
     }
 
     .debt-indicator {

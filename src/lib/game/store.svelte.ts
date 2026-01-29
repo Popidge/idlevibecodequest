@@ -79,6 +79,10 @@ class GameStore {
     // Theme system
     currentTheme = $state<'terminal' | 'ide' | 'vibe-ai'>('terminal');
 
+    // How to Play modal state
+    showHowToPlayModal = $state(false);
+    hasSeenHowToPlay = $state(false);
+
     // Phase 1: Offline gains modal state
     offlineGains = $state<OfflineGains | null>(null);
     showOfflineModal = $state(false);
@@ -727,13 +731,28 @@ class GameStore {
         this.gameState.lastSaveTime = Date.now();
         const saveData = JSON.stringify($state.snapshot(this.gameState));
         localStorage.setItem('vibeCodeClicker', saveData);
+        // Save tutorial seen status separately
+        localStorage.setItem('vibeCodeClicker_tutorial', JSON.stringify({ hasSeenHowToPlay: this.hasSeenHowToPlay }));
         this.showNotification('Game saved!');
     }
 
     // Load game with migration support for tech debt scale change
     loadGame() {
         const savedData = localStorage.getItem('vibeCodeClicker');
+        const tutorialData = localStorage.getItem('vibeCodeClicker_tutorial');
+        
         console.log('Loading game, found data:', !!savedData);
+        
+        // Load tutorial status
+        if (tutorialData) {
+            try {
+                const parsed = JSON.parse(tutorialData);
+                this.hasSeenHowToPlay = parsed.hasSeenHowToPlay || false;
+            } catch (e) {
+                console.error('Failed to load tutorial data:', e);
+            }
+        }
+        
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
@@ -775,12 +794,21 @@ class GameStore {
             } catch (e) {
                 console.error('Failed to load save:', e);
             }
+        } else {
+            // No save data - this is a first-time player
+            // Show the how to play modal after a brief delay
+            setTimeout(() => {
+                if (!this.hasSeenHowToPlay) {
+                    this.showHowToPlayModal = true;
+                }
+            }, 500);
         }
     }
 
     resetGame() {
         if (confirm('Are you sure you want to reset the game? All progress will be lost!')) {
             localStorage.removeItem('vibeCodeClicker');
+            localStorage.removeItem('vibeCodeClicker_tutorial');
             this.gameState = { ...defaultState };
             this.currentPrompt = PROMPT_MESSAGES[0];
             this.floatTexts = [];
@@ -789,6 +817,7 @@ class GameStore {
             this.debtLowHintShown = false;
             this.previousDebtState = 'low';
             this.notificationQueue = []; // Clear notification queue on reset
+            this.hasSeenHowToPlay = false;
             this.showNotification('Game reset!');
         }
     }
@@ -1057,6 +1086,7 @@ class GameStore {
     hardResetGame() {
         if (confirm('Are you sure? This will wipe ALL progress including prestige!')) {
             localStorage.removeItem('vibeCodeClicker');
+            localStorage.removeItem('vibeCodeClicker_tutorial');
             this.gameState = { ...defaultState };
             this.currentPrompt = PROMPT_MESSAGES[0];
             this.floatTexts = [];
@@ -1065,6 +1095,7 @@ class GameStore {
             this.debtLowHintShown = false;
             this.previousDebtState = 'low';
             this.notificationQueue = []; // Clear notification queue on hard reset
+            this.hasSeenHowToPlay = false;
             this.showNotification('Full reset complete!');
         }
     }
@@ -1355,6 +1386,18 @@ class GameStore {
             name: e.name,
             mechanic: e.mechanic
         }));
+    }
+
+    // How to Play modal methods
+    openHowToPlay() {
+        this.showHowToPlayModal = true;
+    }
+
+    closeHowToPlay() {
+        this.showHowToPlayModal = false;
+        this.hasSeenHowToPlay = true;
+        // Save that user has seen the tutorial
+        localStorage.setItem('vibeCodeClicker_tutorial', JSON.stringify({ hasSeenHowToPlay: true }));
     }
 
     // Theme management
