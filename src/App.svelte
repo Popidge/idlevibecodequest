@@ -277,6 +277,7 @@
         flex-direction: column;
         width: 100%;
         height: 100vh;
+        height: 100dvh;
         background-color: var(--bg-color);
         opacity: 0;
         visibility: hidden;

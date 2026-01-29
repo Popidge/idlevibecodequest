@@ -36,6 +36,7 @@
         background-color: var(--panel-bg);
         border-top: 1px solid var(--border-color);
         padding: 8px 0;
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
         flex-shrink: 0;
         gap: 4px;
     }
