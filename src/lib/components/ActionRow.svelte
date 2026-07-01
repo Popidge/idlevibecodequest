@@ -16,7 +16,8 @@
     </div>
     <div class="action-right">
         <button class="prompt-btn" onclick={(e) => store.handlePromptClick(e)}>
-            [ >PROMPT ]
+            <span class="desktop-prompt-label">&gt; PROMPT</span>
+            <span class="compact-prompt-label">[ &gt;PROMPT ]</span>
         </button>
     </div>
 </div>
@@ -31,6 +32,17 @@
         padding: 15px 10px;
         border-top: 1px solid var(--border-color, #00ff00);
         min-height: 60px;
+    }
+
+    @media (min-width: 1101px) {
+        .action-row { grid-row:auto; grid-template-columns:minmax(0,1fr) auto; gap:18px; margin:0 14px 10px; padding:12px 14px; min-height:88px; border:1px solid var(--border-color); border-radius:var(--border-radius); background:color-mix(in srgb,var(--panel-bg) 72%,transparent); }
+        .action-left { display:none; }
+        .action-center { padding:0 4px; }
+        .action-center::before { content:'SYSTEM OUTPUT'; display:block; position:absolute; margin-top:-38px; color:var(--text-amber); font-size:10px; letter-spacing:1px; }
+        .prompt-text { font-size:16px; font-style:normal; white-space:normal; line-height:1.45; }
+        .action-right { padding:0; }
+        .prompt-btn { width:220px; min-height:58px; border:2px solid var(--text-amber); color:var(--text-amber); border-radius:var(--border-radius); font-size:19px; letter-spacing:1px; box-shadow:inset 0 0 16px color-mix(in srgb,var(--text-amber) 7%,transparent); }
+        .prompt-btn:hover { background:color-mix(in srgb,var(--text-amber) 12%,var(--button-bg)); box-shadow:0 0 16px color-mix(in srgb,var(--text-amber) 25%,transparent); }
     }
 
     /* Tablet Styles (900px - 1100px) */
@@ -160,6 +172,8 @@
         transition: all 0.2s ease;
     }
 
+    .desktop-prompt-label { display:none; }
+
     .action-buttons {
         display: flex;
         gap: 12px;
@@ -188,5 +202,13 @@
 
     @keyframes blink {
         50% { opacity: 0; }
+    }
+
+    @media (min-width: 1101px) {
+        .action-row .action-left { display:none; }
+        .action-row .action-center { grid-column:1; grid-row:1; }
+        .action-row .action-right { grid-column:2; grid-row:1; }
+        .desktop-prompt-label { display:inline; }
+        .compact-prompt-label { display:none; }
     }
 </style>

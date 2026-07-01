@@ -12,6 +12,8 @@
     function handleTabClick(type: UpgradeType) {
         store.switchTab('upgrades', type);
     }
+
+    let showLocked = $state(false);
     
     // Get effective click power reactively
     let clickPower = $state(store.effectiveClickPower);
@@ -39,7 +41,7 @@
     <div class="panel-content upgrades-content">
         {#each upgradeTypes as type}
             <div class="tab-content" class:active={store.gameState.activeTab.upgrades === type.key}>
-                <div class="item-list">
+                <div class="item-list" class:show-locked={showLocked}>
                     {#each UPGRADES[type.key] as upgrade}
                         {@const isUnlocked = upgrade.level <= store.maxUpgradeLevel}
                         {@const currentCount = store.gameState.upgrades[type.key][upgrade.level] || 0}
@@ -73,6 +75,10 @@
                         </button>
                     {/each}
                 </div>
+                <button class="desktop-locked-toggle" class:expanded={showLocked} onclick={() => showLocked = !showLocked} aria-expanded={showLocked}>
+                    <span>▣ &nbsp; LOCKED UPGRADES <b>{showLocked ? '⌃' : '⌄'}</b></span>
+                    <small>Reveal upcoming upgrades and their Cred requirements.</small>
+                </button>
             </div>
         {/each}
     </div>
@@ -246,7 +252,29 @@
     }
 
     /* Tablet Styles (768px - 1100px) */
+    @media (min-width: 1101px) {
+        .upgrades-panel { grid-column:auto; grid-row:auto; border:1px solid color-mix(in srgb,var(--border-color) 35%,transparent); border-radius:var(--border-radius); overflow:hidden; }
+        .panel-header { padding:14px 16px 8px; font-size:0; white-space:normal; }
+        .panel-header::before { content:'ϟ  UPGRADES'; font-size:14px; letter-spacing:.5px; }
+        .tab-bar { margin-top:8px; gap:5px; }
+        .tab-btn { min-height:34px; padding:6px 18px; font-size:12px; border-color:color-mix(in srgb,var(--text-dim) 60%,transparent); }
+        .panel-content { border:0; padding:6px 16px 14px; }
+        .item-list { gap:9px; }
+        .upgrade-item.locked { display:none; }
+        .item-list.show-locked .upgrade-item.locked { display:grid; }
+        .upgrade-item { min-height:66px; padding:12px 14px; display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto; gap:6px 10px; border-radius:var(--border-radius); }
+        .item-name { grid-column:1/-1; font-size:13px; }
+        .item-cost, .item-reward, .item-locked-text { font-size:12px; }
+        .item-reward, .item-locked-text { justify-self:end; }
+        .panel-footer { display:none; }
+        .desktop-locked-toggle { width:100%; min-height:58px; margin-top:10px; padding:11px 13px; display:flex; flex-direction:column; justify-content:center; gap:6px; border:1px dashed color-mix(in srgb,var(--text-amber) 55%,transparent); border-radius:var(--border-radius); color:var(--text-amber); background:transparent; font-family:var(--font-family); text-align:left; cursor:pointer; }
+        .desktop-locked-toggle:hover, .desktop-locked-toggle.expanded { background:color-mix(in srgb,var(--text-amber) 7%,transparent); border-color:var(--text-amber); }
+        .desktop-locked-toggle span { display:flex; justify-content:space-between; }
+        .desktop-locked-toggle small { color:var(--text-dim); padding-left:22px; }
+    }
+
     @media (max-width: 1100px) and (min-width: 768px) {
+        .desktop-locked-toggle { display:none; }
         .upgrades-panel {
             grid-column: auto;
             grid-row: auto;
@@ -302,6 +330,7 @@
 
     /* Mobile Styles */
     @media (max-width: 767px) {
+        .desktop-locked-toggle { display:none; }
         .upgrades-panel {
             grid-column: auto;
             grid-row: auto;

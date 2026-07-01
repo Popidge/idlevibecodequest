@@ -29,6 +29,11 @@
         align-items: center;
     }
 
+    @media (min-width:1101px) {
+        .footer { grid-row:auto; padding:7px 14px; justify-content:stretch; }
+        .footer-content { width:100%; justify-content:space-between; }
+    }
+
     .auto-save-text {
         color: var(--text-dim, #008800);
     }

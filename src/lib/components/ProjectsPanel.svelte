@@ -13,6 +13,8 @@
     function handleTabClick(type: ProjectType) {
         store.switchTab('projects', type);
     }
+
+    let showLocked = $state(false);
     
     // Format shipped count as version number (v0.1, v1.2, v14.8, etc.)
     function formatVersion(count: number): string {
@@ -38,7 +40,7 @@
     <div class="panel-content projects-content">
         {#each projectTypes as type}
             <div class="tab-content" class:active={store.gameState.activeTab.projects === type.key}>
-                <div class="item-list">
+                <div class="item-list" class:show-locked={showLocked}>
                     {#each PROJECTS[type.key] as project}
                         {@const count = store.gameState.projects[type.key][project.id] || 0}
                         {@const isUnlocked = store.unlockedProjects.includes(project.id)}
@@ -65,14 +67,17 @@
                                 </span>
                                 <span class="item-cost">{locCost} LoC</span>
                                 <span class="item-reward">
-                                    → ${formatMoney(store.getEffectiveProjectReward(project.reward))}
+                                    → ${formatMoney(store.getEffectiveProjectReward(project.reward))}{#if 'recurring' in project && project.recurring} per second{/if}
                                     {#if project.cred > 0} + {store.getEffectiveProjectCred(project.cred).toFixed(0)} Cred{/if}
-                                    {#if 'recurring' in project && project.recurring} (recurring){/if}
                                 </span>
                             {/if}
                         </button>
                     {/each}
                 </div>
+                <button class="desktop-milestone" class:expanded={showLocked} onclick={() => showLocked = !showLocked} aria-expanded={showLocked}>
+                    <span>▣ &nbsp; LOCKED PROJECTS <b>{showLocked ? '⌃' : '⌄'}</b></span>
+                    <small>Complete more projects and earn Cred to unlock advanced builds.</small>
+                </button>
             </div>
         {/each}
     </div>
@@ -246,7 +251,30 @@
     }
 
     /* Tablet Styles (768px - 1100px) */
+    @media (min-width: 1101px) {
+        .projects-panel { grid-column:auto; grid-row:auto; border:1px solid color-mix(in srgb,var(--border-color) 35%,transparent); border-radius:var(--border-radius); overflow:hidden; }
+        .panel-header { padding:14px 16px 8px; font-size:14px; white-space:normal; }
+        .panel-header { font-size:0; }
+        .panel-header::before { content:'▱  SHIP PROJECTS'; font-size:14px; letter-spacing:.5px; }
+        .tab-bar { margin-top:8px; gap:5px; }
+        .tab-btn { min-height:34px; padding:6px 18px; font-size:12px; border-color:color-mix(in srgb,var(--text-dim) 60%,transparent); }
+        .panel-content { border:0; padding:6px 16px 14px; }
+        .item-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+        .project-item { min-height:104px; padding:16px; display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto; align-content:center; gap:10px; border-radius:var(--border-radius); }
+        .project-item.locked { display:none; }
+        .item-list.show-locked .project-item.locked { display:grid; }
+        .item-name { grid-column:1/-1; font-size:15px; }
+        .item-cost { font-size:13px; }
+        .item-reward { font-size:13px; justify-self:end; }
+        .desktop-milestone { width:100%; margin-top:12px; min-height:58px; padding:12px 14px; display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:7px; border:1px dashed color-mix(in srgb,var(--text-amber) 55%,transparent); border-radius:var(--border-radius); color:var(--text-amber); background:transparent; font-family:var(--font-family); text-align:left; cursor:pointer; }
+        .desktop-milestone:hover, .desktop-milestone.expanded { background:color-mix(in srgb,var(--text-amber) 7%,transparent); border-color:var(--text-amber); }
+        .desktop-milestone span { display:flex; justify-content:space-between; }
+        .desktop-milestone small { color:var(--text-dim); padding-left:22px; }
+        .panel-footer { display:none; }
+    }
+
     @media (max-width: 1100px) and (min-width: 768px) {
+        .desktop-milestone { display:none; }
         .projects-panel {
             grid-column: auto;
             grid-row: auto;
@@ -302,6 +330,7 @@
 
     /* Mobile Styles */
     @media (max-width: 767px) {
+        .desktop-milestone { display:none; }
         .projects-panel {
             grid-column: auto;
             grid-row: auto;
