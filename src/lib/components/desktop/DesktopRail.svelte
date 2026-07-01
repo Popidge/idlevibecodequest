@@ -2,8 +2,9 @@
     import { store, formatMoney, formatNumber } from '$lib/game/store.svelte';
     import ProgressBar from '../ProgressBar.svelte';
 
-    let nextLabel = $derived(store.cheapestUpgrade
-        ? `${store.cheapestUpgrade.type === 'vibeCode' ? 'Vibe Code' : 'Delegation'} L${store.cheapestUpgrade.level}`
+    let cheapestUpgrade = $derived(store.cheapestUpgrade);
+    let nextLabel = $derived(cheapestUpgrade
+        ? `${cheapestUpgrade.type === 'vibeCode' ? 'Vibe Code' : 'Delegation'} L${cheapestUpgrade.level}`
         : 'All upgrades acquired');
 </script>
 
@@ -21,11 +22,11 @@
         <small>({store.gameState.prestige?.totalPrestiges ?? 0} prestiges)</small>
     </section>
 
-    {#if store.cheapestUpgrade}
+    {#if cheapestUpgrade}
         <section class="next-upgrade">
             <span>NEXT UPGRADE</span>
             <strong>{nextLabel}</strong>
-            <ProgressBar current={store.gameState.resources.money} max={store.cheapestUpgrade.cost} label={`$${formatNumber(store.gameState.resources.money)} / $${formatNumber(store.cheapestUpgrade.cost)}`} />
+            <ProgressBar current={store.gameState.resources.money} max={cheapestUpgrade.cost} label={`$${formatMoney(store.gameState.resources.money)} / $${formatMoney(cheapestUpgrade.cost)}`} />
         </section>
     {/if}
 

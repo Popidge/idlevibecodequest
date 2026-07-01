@@ -2,6 +2,7 @@
     import { PROJECTS } from '$lib/game/constants';
     import { store, formatNumber, formatMoney, getProjectLocCost } from '$lib/game/store.svelte';
     import { getEffectiveRequiredCredForProject } from '$lib/game/utils';
+    import LockedToggle from './LockedToggle.svelte';
 
     type ProjectType = 'standard' | 'saas' | 'openSource';
     const projectTypes: { key: ProjectType; label: string }[] = [
@@ -24,7 +25,8 @@
 
 <div class="panel projects-panel">
     <div class="panel-header">
-        ┌─ SHIP PROJECTS ────────────────────────────────┐
+        <span class="legacy-title" aria-hidden="true">┌─ SHIP PROJECTS ────────────────────────────────┐</span>
+        <span class="desktop-title"><span aria-hidden="true">▱</span> SHIP PROJECTS</span>
         <div class="tab-bar">
             {#each projectTypes as type}
                 <button 
@@ -40,7 +42,7 @@
     <div class="panel-content projects-content">
         {#each projectTypes as type}
             <div class="tab-content" class:active={store.gameState.activeTab.projects === type.key}>
-                <div class="item-list" class:show-locked={showLocked}>
+                <div class="item-list" class:show-locked={showLocked} id={`locked-projects-${type.key}`}>
                     {#each PROJECTS[type.key] as project}
                         {@const count = store.gameState.projects[type.key][project.id] || 0}
                         {@const isUnlocked = store.unlockedProjects.includes(project.id)}
@@ -74,10 +76,7 @@
                         </button>
                     {/each}
                 </div>
-                <button class="desktop-milestone" class:expanded={showLocked} onclick={() => showLocked = !showLocked} aria-expanded={showLocked}>
-                    <span>▣ &nbsp; LOCKED PROJECTS <b>{showLocked ? '⌃' : '⌄'}</b></span>
-                    <small>Complete more projects and earn Cred to unlock advanced builds.</small>
-                </button>
+                <LockedToggle label="LOCKED PROJECTS" description="Complete more projects and earn Cred to unlock advanced builds." expanded={showLocked} controls={`locked-projects-${type.key}`} onToggle={() => showLocked = !showLocked} />
             </div>
         {/each}
     </div>
@@ -250,12 +249,14 @@
         overflow-x: hidden;
     }
 
-    /* Tablet Styles (768px - 1100px) */
+    .desktop-title { display:none; }
+
+    /* Desktop Styles */
     @media (min-width: 1101px) {
         .projects-panel { grid-column:auto; grid-row:auto; border:1px solid color-mix(in srgb,var(--border-color) 35%,transparent); border-radius:var(--border-radius); overflow:hidden; }
         .panel-header { padding:14px 16px 8px; font-size:14px; white-space:normal; }
-        .panel-header { font-size:0; }
-        .panel-header::before { content:'▱  SHIP PROJECTS'; font-size:14px; letter-spacing:.5px; }
+        .legacy-title { display:none; }
+        .desktop-title { display:block; font-size:14px; letter-spacing:.5px; }
         .tab-bar { margin-top:8px; gap:5px; }
         .tab-btn { min-height:34px; padding:6px 18px; font-size:12px; border-color:color-mix(in srgb,var(--text-dim) 60%,transparent); }
         .panel-content { border:0; padding:6px 16px 14px; }
@@ -266,15 +267,10 @@
         .item-name { grid-column:1/-1; font-size:15px; }
         .item-cost { font-size:13px; }
         .item-reward { font-size:13px; justify-self:end; }
-        .desktop-milestone { width:100%; margin-top:12px; min-height:58px; padding:12px 14px; display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:7px; border:1px dashed color-mix(in srgb,var(--text-amber) 55%,transparent); border-radius:var(--border-radius); color:var(--text-amber); background:transparent; font-family:var(--font-family); text-align:left; cursor:pointer; }
-        .desktop-milestone:hover, .desktop-milestone.expanded { background:color-mix(in srgb,var(--text-amber) 7%,transparent); border-color:var(--text-amber); }
-        .desktop-milestone span { display:flex; justify-content:space-between; }
-        .desktop-milestone small { color:var(--text-dim); padding-left:22px; }
         .panel-footer { display:none; }
     }
 
     @media (max-width: 1100px) and (min-width: 768px) {
-        .desktop-milestone { display:none; }
         .projects-panel {
             grid-column: auto;
             grid-row: auto;
@@ -330,7 +326,6 @@
 
     /* Mobile Styles */
     @media (max-width: 767px) {
-        .desktop-milestone { display:none; }
         .projects-panel {
             grid-column: auto;
             grid-row: auto;

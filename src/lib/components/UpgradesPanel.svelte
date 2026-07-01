@@ -2,6 +2,7 @@
     import { UPGRADES } from '$lib/game/constants';
     import { store, formatNumber } from '$lib/game/store.svelte';
     import { getUpgradeCost, getEffectiveRequiredCredForUpgrade } from '$lib/game/utils';
+    import LockedToggle from './LockedToggle.svelte';
 
     type UpgradeType = 'vibeCode' | 'delegation';
     const upgradeTypes: { key: UpgradeType; label: string }[] = [
@@ -41,7 +42,7 @@
     <div class="panel-content upgrades-content">
         {#each upgradeTypes as type}
             <div class="tab-content" class:active={store.gameState.activeTab.upgrades === type.key}>
-                <div class="item-list" class:show-locked={showLocked}>
+                <div class="item-list" class:show-locked={showLocked} id={`locked-upgrades-${type.key}`}>
                     {#each UPGRADES[type.key] as upgrade}
                         {@const isUnlocked = upgrade.level <= store.maxUpgradeLevel}
                         {@const currentCount = store.gameState.upgrades[type.key][upgrade.level] || 0}
@@ -75,10 +76,7 @@
                         </button>
                     {/each}
                 </div>
-                <button class="desktop-locked-toggle" class:expanded={showLocked} onclick={() => showLocked = !showLocked} aria-expanded={showLocked}>
-                    <span>▣ &nbsp; LOCKED UPGRADES <b>{showLocked ? '⌃' : '⌄'}</b></span>
-                    <small>Reveal upcoming upgrades and their Cred requirements.</small>
-                </button>
+                <LockedToggle label="LOCKED UPGRADES" description="Reveal upcoming upgrades and their Cred requirements." expanded={showLocked} controls={`locked-upgrades-${type.key}`} onToggle={() => showLocked = !showLocked} />
             </div>
         {/each}
     </div>
@@ -267,14 +265,9 @@
         .item-cost, .item-reward, .item-locked-text { font-size:12px; }
         .item-reward, .item-locked-text { justify-self:end; }
         .panel-footer { display:none; }
-        .desktop-locked-toggle { width:100%; min-height:58px; margin-top:10px; padding:11px 13px; display:flex; flex-direction:column; justify-content:center; gap:6px; border:1px dashed color-mix(in srgb,var(--text-amber) 55%,transparent); border-radius:var(--border-radius); color:var(--text-amber); background:transparent; font-family:var(--font-family); text-align:left; cursor:pointer; }
-        .desktop-locked-toggle:hover, .desktop-locked-toggle.expanded { background:color-mix(in srgb,var(--text-amber) 7%,transparent); border-color:var(--text-amber); }
-        .desktop-locked-toggle span { display:flex; justify-content:space-between; }
-        .desktop-locked-toggle small { color:var(--text-dim); padding-left:22px; }
     }
 
     @media (max-width: 1100px) and (min-width: 768px) {
-        .desktop-locked-toggle { display:none; }
         .upgrades-panel {
             grid-column: auto;
             grid-row: auto;
@@ -330,7 +323,6 @@
 
     /* Mobile Styles */
     @media (max-width: 767px) {
-        .desktop-locked-toggle { display:none; }
         .upgrades-panel {
             grid-column: auto;
             grid-row: auto;
