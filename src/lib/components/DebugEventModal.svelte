@@ -55,8 +55,8 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="modal-backdrop" onclick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Debug Event Trigger">
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+<dialog open class="modal-backdrop" onclick={handleBackdropClick} aria-label="Debug Event Trigger">
+    <div class="modal-content">
         <div class="modal-header">
             <span class="header-title">┌─ DEBUG: TRIGGER EVENT ─┐</span>
             <button class="close-btn" onclick={onClose}>[X]</button>
@@ -98,10 +98,15 @@
 
         <div class="modal-corner">└─────────────────────────────┘</div>
     </div>
-</div>
+</dialog>
 
 <style>
     .modal-backdrop {
+        margin: 0;
+        max-width: none;
+        max-height: none;
+        border: 0;
+        padding: 0;
         position: fixed;
         top: 0;
         left: 0;

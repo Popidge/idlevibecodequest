@@ -11,8 +11,8 @@
         }
     });
     
-    function handleDismiss() {
-        store.dismissOfflineModal();
+    function handleDismiss(event: MouseEvent) {
+        if (event.target === event.currentTarget) store.dismissOfflineModal();
     }
     
     function formatHours(hours: number): string {
@@ -25,10 +25,8 @@
 
 {#if store.showOfflineModal && store.offlineGains}
     {@const gains = store.offlineGains}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="offline-modal" onclick={handleDismiss} role="alert" aria-live="polite">
-        <div class="offline-content" onclick={(e) => e.stopPropagation()}>
+    <dialog open class="offline-modal" onclick={handleDismiss} aria-label="Offline gains">
+        <div class="offline-content">
             <div class="offline-header">┌─ WELCOME BACK! ───────────┐</div>
             <div class="offline-body">
                 <p class="offline-message">You were away for <span class="time">{formatHours(gains.hoursOffline)}</span></p>
@@ -47,7 +45,7 @@
             </div>
             <div class="offline-footer">└─────────────────────────────┘</div>
         </div>
-    </div>
+    </dialog>
 {/if}
 
 <style>
@@ -58,6 +56,10 @@
         z-index: 100;
         cursor: pointer;
         animation: slideIn 0.3s ease-out;
+        margin: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
     }
     
     @keyframes slideIn {

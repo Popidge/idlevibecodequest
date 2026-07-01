@@ -91,6 +91,7 @@ export interface PrestigeState {
     prestigePoints: number;
     totalPrestiges: number;
     pathHistory: PrestigePath[];
+    pathPoints: Record<PrestigePath, number>;
     runStartTime: number;
     bonuses?: PrestigeBonuses; // Optional - deprecated, now calculated from techTrees
     // Phase 4: Tech tree purchases
@@ -100,6 +101,12 @@ export interface PrestigeState {
         linus: number[];
         learning: number[];
     };
+}
+
+export interface SaveEnvelope {
+    version: number;
+    savedAt: number;
+    state: GameState;
 }
 
 export interface PrestigeSummary {
@@ -153,8 +160,6 @@ export interface SystemModifiers {
     prestigeDebtModifier: number;           // 0-1 range from prestige points
     unlockCodeZen: boolean;                 // Inverts penalty to bonus
 
-    // Special Flags (for boolean logic)
-    unlockLegacyWhisperer: boolean; // Legacy - no longer used, kept for compatibility
 }
 
 export interface TechTreeNode {

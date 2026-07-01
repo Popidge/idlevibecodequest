@@ -2,6 +2,7 @@
 // Standalone module for modeling gameplay timing metrics
 
 import { PROJECTS, UPGRADES, TECH_DEBT, PRESTIGE, UNLOCKS, type Upgrade, type Project } from './constants';
+import type { PrestigePath } from './types';
 
 // ============================================
 // Types for Simulation Configuration
@@ -13,7 +14,6 @@ export interface TuningConfig {
     
     // Base accumulation rates (overrides TECH_DEBT constants)
     baseDebtPerClick: number;
-    debtPerProject: number;
     delegationDebtRate: number;
     maxDebt: number;
     
@@ -30,6 +30,7 @@ export interface TuningConfig {
     cashMultiplierPerPoint: number;
     locMultiplierPerPoint: number;
     credMultiplierPerPoint: number;
+    prestigePath: PrestigePath;
     
     // Tech tree modifiers (0.0 = no effect)
     techTreeMoneyMultiplier: number;
@@ -39,7 +40,6 @@ export interface TuningConfig {
     techTreePassiveLocBonus: number;
     techTreeDebtAccumReduction: number;
     techTreeDebtPenaltyReduction: number;
-    techTreeDebtClearingEfficiency: number;
     
     // Auto-purchase threshold (0.0 - 1.0)
     autoPurchaseThreshold: number;
@@ -65,6 +65,7 @@ export interface SimulationState {
     totalClicks: number;
     timeElapsed: number; // in seconds
     totalCashEarned: number;
+    prestigePathPoints: number;
 }
 
 export interface SimulationResult {
@@ -109,7 +110,6 @@ export const defaultConfig: TuningConfig = {
     
     // Tech Debt defaults from constants (Reworked v0.5 - linear system)
     baseDebtPerClick: TECH_DEBT.BASE_ACCUMULATION,
-    debtPerProject: 0, // Removed in v0.5 rework - debt is now per-LoC only
     delegationDebtRate: 1, // Multiplier for passive debt (1 = same as click)
     maxDebt: TECH_DEBT.MAX_LEVEL,
     
@@ -122,6 +122,7 @@ export const defaultConfig: TuningConfig = {
     cashMultiplierPerPoint: PRESTIGE.CASH_MULTIPLIER_PER_POINT,
     locMultiplierPerPoint: PRESTIGE.LOC_MULTIPLIER_PER_POINT,
     credMultiplierPerPoint: PRESTIGE.CRED_MULTIPLIER_PER_POINT,
+    prestigePath: 'buyout',
     
     // Tech tree defaults (no nodes purchased)
     techTreeMoneyMultiplier: 0,
@@ -131,7 +132,6 @@ export const defaultConfig: TuningConfig = {
     techTreePassiveLocBonus: 0,
     techTreeDebtAccumReduction: 0, // New: techTreeDebtMultiplier
     techTreeDebtPenaltyReduction: 0,
-    techTreeDebtClearingEfficiency: 1,
     
     autoPurchaseThreshold: 1.0, // 100% of cost needed for auto-purchase
 };
@@ -179,9 +179,17 @@ function getUnlockedProjects(cred: number): string[] {
     return [...new Set(unlocked)];
 }
 
-function calculatePrestigePoints(cash: number): number {
-    const rawPoints = Math.floor(Math.log10(cash + 1));
-    return Math.max(rawPoints, PRESTIGE.MIN_POINTS);
+function getDebtPenaltyFactor(state: SimulationState, config: TuningConfig): number {
+    const debtRatio = Math.min(Math.max(state.techDebt / config.maxDebt, 0), 1);
+    const pathMitigation = config.prestigePath === 'learning'
+        ? state.prestigePathPoints * PRESTIGE.DEBT_PENALTY_REDUCTION
+        : 0;
+    const mitigation = Math.min(Math.max(config.techTreeDebtPenaltyReduction + pathMitigation, 0), 1);
+    return 1 - (debtRatio / 2) * (1 - mitigation);
+}
+
+function calculatePrestigePoints(upgradePoints: number, totalAvailable: number, threshold: number): number {
+    return Math.max(Math.floor(upgradePoints / (totalAvailable * threshold)), PRESTIGE.MIN_POINTS);
 }
 
 // ============================================
@@ -205,17 +213,19 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         projectsShipped: 0,
         totalClicks: 0,
         timeElapsed: 0,
-        totalCashEarned: 0
+        totalCashEarned: 0,
+        prestigePathPoints: 0
     };
 
     // Calculate total upgrades available
-    const totalUpgradesAvailable = UPGRADES.vibeCode.length + UPGRADES.delegation.length;
+    const totalUpgradesAvailable = UPGRADES.vibeCode.reduce((sum, upgrade) => sum + upgrade.level, 0) * 2;
 
     // Track metrics
     let timeToFirstPrestige: number | null = null;
     let timeToSecondPrestige: number | null = null;
     let upgradesAtFirstPrestige = 0;
     let upgradesAtSecondPrestige = 0;
+    let techDebtAt4Minutes = 0;
     
     const upgradeProgressOverTime: Array<{ time: number; owned: number; percentage: number }> = [];
     const resourceRateOverTime: Array<{ time: number; locRate: number; cashRate: number; credRate: number }> = [];
@@ -245,7 +255,10 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         }
         
         // Effective click power with tech tree modifier
-        const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier;
+        const pathLocMultiplier = config.prestigePath === 'nirvana'
+            ? state.prestigePathPoints * config.locMultiplierPerPoint
+            : 0;
+        const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier + pathLocMultiplier;
         const locPerClickFlat = baseClickPower * config.techTreeLocPerClickBonus;
         const effectiveClickPower = Math.floor((baseClickPower + locPerClickFlat) * effectiveLocMultiplier);
 
@@ -260,12 +273,13 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         const effectivePassiveLocRate = (basePassiveLocRate + passiveLocFlat) * effectiveLocMultiplier;
 
         // Debt penalty factor (Reworked v0.5 - linear system)
-        const debtRatio = state.techDebt / config.maxDebt;
-        const treeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
-        const debtPenaltyFactor = Math.max(0.1, 1 - (debtRatio * treeMultiplier));
+        const debtPenaltyFactor = getDebtPenaltyFactor(state, config);
 
         // Effective cash multiplier
-        const effectiveCashMultiplier = (1 + config.techTreeMoneyMultiplier) * (1 + config.techTreeLocMultiplier);
+        const pathCashMultiplier = config.prestigePath === 'buyout'
+            ? state.prestigePathPoints * config.cashMultiplierPerPoint
+            : 0;
+        const effectiveCashMultiplier = 1 + config.techTreeMoneyMultiplier + pathCashMultiplier;
 
         // ========================================
         // Resource generation from clicks
@@ -278,8 +292,12 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         state.resources.loc += locFromClicks;
 
         // Tech debt from clicks
-        const debtPerClick = config.baseDebtPerClick * (1 - Math.min(config.techTreeDebtAccumReduction, 0.95));
-        state.techDebt = Math.min(state.techDebt + (debtPerClick * clicksThisTick), config.maxDebt);
+        const pathAccumulationReduction = config.prestigePath === 'learning'
+            ? state.prestigePathPoints * PRESTIGE.DEBT_ACCUMULATION_REDUCTION
+            : 0;
+        const accumulationFactor = 1 - Math.min(config.techTreeDebtAccumReduction + pathAccumulationReduction, 1);
+        const debtFromClicks = locFromClicks * config.baseDebtPerClick * accumulationFactor * 0.1;
+        state.techDebt = Math.min(state.techDebt + debtFromClicks, config.maxDebt);
 
         // ========================================
         // Resource generation from passive sources
@@ -305,8 +323,10 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
 
         // Tech debt from passive delegation (Reworked v0.5 - per-LoC system)
         // Debt accumulates based on LoC generated, not time
-        const debtPerSecond = config.baseDebtPerClick * config.delegationDebtRate * (1 - Math.min(config.techTreeDebtAccumReduction, 1.0));
-        state.techDebt = Math.min(state.techDebt + (debtPerSecond * dt), config.maxDebt);
+        const debtFromPassive = locFromPassive * config.baseDebtPerClick * config.delegationDebtRate * accumulationFactor * 0.1;
+        state.techDebt = Math.min(state.techDebt + debtFromPassive, config.maxDebt);
+
+        if (time <= 240) techDebtAt4Minutes = state.techDebt;
 
         // ========================================
         // Auto-purchase upgrades when affordable
@@ -373,7 +393,10 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
             
             const project = PROJECTS[cheapestProject.type].find(p => p.id === cheapestProject.id)!;
             const effectiveMoneyReward = project.reward * debtPenaltyFactor * effectiveCashMultiplier;
-            const effectiveCredReward = Math.floor(project.cred * debtPenaltyFactor * (1 + config.techTreeCredMultiplier));
+            const pathCredMultiplier = config.prestigePath === 'linus'
+                ? state.prestigePathPoints * config.credMultiplierPerPoint
+                : 0;
+            const effectiveCredReward = Math.floor(project.cred * debtPenaltyFactor * (1 + config.techTreeCredMultiplier + pathCredMultiplier));
             
             state.resources.money += effectiveMoneyReward;
             state.resources.cred += effectiveCredReward;
@@ -419,8 +442,11 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
             upgradesAtFirstPrestige = newOwned;
             
             // Simulate the prestige reset
-            const points = calculatePrestigePoints(state.totalCashEarned);
-            state.resources.money = points * config.startingCashPerPoint;
+            const points = calculatePrestigePoints(newOwned, totalUpgradesAvailable, config.prestigeThresholdPercent);
+            state.prestigePathPoints += points;
+            state.resources.money = config.prestigePath === 'buyout'
+                ? state.prestigePathPoints * config.startingCashPerPoint
+                : 0;
             state.resources.loc = 0;
             state.resources.cred = 0;
             state.upgrades.vibeCode.clear();
@@ -434,7 +460,7 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
         }
 
         // Second prestige
-        if (timeToFirstPrestige !== null && timeToSecondPrestige === null && upgradePercentage >= config.prestigeThresholdPercent) {
+        else if (timeToFirstPrestige !== null && timeToSecondPrestige === null && upgradePercentage >= config.prestigeThresholdPercent) {
             timeToSecondPrestige = time - timeToFirstPrestige;
             upgradesAtSecondPrestige = newOwned;
             break; // Stop simulation after second prestige
@@ -447,14 +473,12 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
     const finalPassiveIncome = calculatePassiveIncome(state, config);
     
     // Final debt penalty factor - same formula as in simulation
-    const finalDebtRatio = state.techDebt / config.maxDebt;
-    const finalTreeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
-    const finalDebtPenaltyFactor = Math.max(0.1, 1 - (finalDebtRatio * finalTreeMultiplier));
+    const finalDebtPenaltyFactor = getDebtPenaltyFactor(state, config);
 
     return {
         timeToFirstPrestige,
         timeToSecondPrestige,
-        techDebtAt4Minutes: calculateDebtAtTime(state, 240, config),
+        techDebtAt4Minutes,
         timeToNextUpgrade: calculateTimeToNextUpgrade(state, config),
         totalUpgradesAtFirstPrestige: upgradesAtFirstPrestige,
         totalUpgradesAtSecondPrestige: upgradesAtSecondPrestige,
@@ -474,11 +498,11 @@ export function simulateGameplay(config: TuningConfig, maxTimeSeconds: number = 
 
 function countTotalUpgrades(state: SimulationState): number {
     let owned = 0;
-    for (const count of state.upgrades.vibeCode.values()) {
-        owned += count;
+    for (const [level, count] of state.upgrades.vibeCode) {
+        owned += level * count;
     }
-    for (const count of state.upgrades.delegation.values()) {
-        owned += count;
+    for (const [level, count] of state.upgrades.delegation) {
+        owned += level * count;
     }
     return owned;
 }
@@ -490,7 +514,10 @@ function calculateClickPower(state: SimulationState, config: TuningConfig): numb
     }
     
     // Apply tech tree modifiers
-    const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier;
+    const pathLocMultiplier = config.prestigePath === 'nirvana'
+        ? state.prestigePathPoints * config.locMultiplierPerPoint
+        : 0;
+    const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier + pathLocMultiplier;
     const locPerClickFlat = baseClickPower * config.techTreeLocPerClickBonus;
     return Math.floor((baseClickPower + locPerClickFlat) * effectiveLocMultiplier);
 }
@@ -507,7 +534,10 @@ function calculatePassiveLocRate(state: SimulationState, config: TuningConfig): 
     }
     
     // Apply tech tree modifiers
-    const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier;
+    const pathLocMultiplier = config.prestigePath === 'nirvana'
+        ? state.prestigePathPoints * config.locMultiplierPerPoint
+        : 0;
+    const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier + pathLocMultiplier;
     const passiveLocFlat = basePassiveLocRate * config.techTreePassiveLocBonus;
     return (basePassiveLocRate + passiveLocFlat) * effectiveLocMultiplier;
 }
@@ -515,10 +545,7 @@ function calculatePassiveLocRate(state: SimulationState, config: TuningConfig): 
 function calculatePassiveIncome(state: SimulationState, config: TuningConfig): number {
     let basePassiveIncome = 0;
     
-    // Debt penalty factor (Reworked v0.5 - linear system)
-    const debtRatio = state.techDebt / config.maxDebt;
-    const treeMultiplier = 1 - Math.min(config.techTreeDebtAccumReduction, 1.0);
-    const debtPenaltyFactor = Math.max(0.1, 1 - (debtRatio * treeMultiplier));
+    const debtPenaltyFactor = getDebtPenaltyFactor(state, config);
     
     for (const [projectId, count] of state.projects.saas) {
         const project = PROJECTS.saas.find(p => p.id === projectId);
@@ -528,21 +555,11 @@ function calculatePassiveIncome(state: SimulationState, config: TuningConfig): n
     }
     
     // Apply tech tree modifiers
-    const effectiveLocMultiplier = 1 + config.techTreeLocMultiplier;
-    const effectiveCashMultiplier = (1 + config.techTreeMoneyMultiplier) * effectiveLocMultiplier;
+    const pathCashMultiplier = config.prestigePath === 'buyout'
+        ? state.prestigePathPoints * config.cashMultiplierPerPoint
+        : 0;
+    const effectiveCashMultiplier = 1 + config.techTreeMoneyMultiplier + pathCashMultiplier;
     return basePassiveIncome * debtPenaltyFactor * effectiveCashMultiplier;
-}
-
-function calculateDebtAtTime(state: SimulationState, targetTime: number, config: TuningConfig): number {
-    // Simplified debt calculation at a specific time (Reworked v0.5 - linear system)
-    // Debt accumulates per-LoC generated, not per-project or per-time
-    const clicksAtTarget = config.clickRate * targetTime;
-    const passiveAtTarget = config.baseDebtPerClick * config.delegationDebtRate * targetTime;
-    // debtPerProject is 0 in v0.5 rework
-    const projectDebtAtTarget = 0;
-    
-    const totalDebt = (config.baseDebtPerClick * clicksAtTarget) + passiveAtTarget + projectDebtAtTarget;
-    return Math.min(totalDebt, config.maxDebt);
 }
 
 function calculateTimeToNextUpgrade(state: SimulationState, config: TuningConfig): number | null {

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { SpottingEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -9,22 +10,23 @@
     }
     
     let { config, onScoreUpdate, onComplete, onFail }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game state
     let foundLines = $state<Set<number>>(new Set());
     let clickedLines = $state<Set<number>>(new Set());
-    let timeRemaining = $state(config.config.timeLimit);
+    let timeRemaining = $state(gameConfig.timeLimit);
     let isComplete = $state(false);
     let timerInterval: ReturnType<typeof setInterval> | null = null;
     let showResult = $state(false);
     
     // Calculate max score (100 points per hallucination found)
-    const hallucinationLines = config.config.hallucinations
+    const hallucinationLines = gameConfig.hallucinations
         .filter(h => h.isHallucination)
         .map(h => h.line);
     const maxScore = hallucinationLines.length * 100;
     
-    const contentLines = config.config.content.split('\n');
+    const contentLines = gameConfig.content.split('\n');
     
     $effect(() => {
         timerInterval = setInterval(() => {
@@ -45,7 +47,7 @@
         
         clickedLines = new Set([...clickedLines, lineNumber]);
         
-        const lineInfo = config.config.hallucinations.find(h => h.line === lineNumber);
+        const lineInfo = gameConfig.hallucinations.find(h => h.line === lineNumber);
         
         if (lineInfo?.isHallucination) {
             // Found a bug!
@@ -82,7 +84,7 @@
     }
     
     function isClickable(lineNumber: number): boolean {
-        const lineInfo = config.config.hallucinations.find(h => h.line === lineNumber);
+        const lineInfo = gameConfig.hallucinations.find(h => h.line === lineNumber);
         return !!lineInfo && !clickedLines.has(lineNumber) && !isComplete;
     }
 </script>
@@ -105,8 +107,8 @@
     <div class="code-container">
         {#each contentLines as line, index}
             {@const lineNumber = index + 1}
-            {@const lineInfo = config.config.hallucinations.find(h => h.line === lineNumber)}
-            <div 
+            <button
+                type="button"
                 class="code-line {getLineClass(lineNumber)}"
                 class:clickable={isClickable(lineNumber)}
                 onclick={() => handleLineClick(lineNumber)}
@@ -116,7 +118,7 @@
                 {#if foundLines.has(lineNumber)}
                     <span class="bug-icon">🐛</span>
                 {/if}
-            </div>
+            </button>
         {/each}
     </div>
     

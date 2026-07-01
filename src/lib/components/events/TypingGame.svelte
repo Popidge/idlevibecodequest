@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { TypingEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -9,11 +10,12 @@
     }
     
     let { config, onScoreUpdate, onComplete, onFail }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game state
-    let currentPhrase = $state(config.config.phrases[Math.floor(Math.random() * config.config.phrases.length)]);
+    let currentPhrase = $state(gameConfig.phrases[Math.floor(Math.random() * gameConfig.phrases.length)]);
     let userInput = $state('');
-    let timeRemaining = $state(config.config.timeLimit);
+    let timeRemaining = $state(gameConfig.timeLimit);
     let isComplete = $state(false);
     let timerInterval: ReturnType<typeof setInterval> | null = null;
     let accuracy = $state(100);
@@ -21,7 +23,7 @@
     let wpm = $state(0);
     
     // Max score based on phrase length
-    const maxScore = currentPhrase.text.length * 10;
+    const maxScore = currentPhrase.text.length * 10 + 50;
     
     $effect(() => {
         startTime = Date.now();

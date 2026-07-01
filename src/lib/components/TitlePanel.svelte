@@ -4,7 +4,7 @@
 </script>
 
 <div class="panel title-panel">
-    <div class="panel-header">idle-vibe-code v0.6</div>
+    <div class="panel-header">idle-vibe-code v0.6.1</div>
     <div class="panel-content title-content">
         <pre class="ascii-title">
 ╔══════════╗
@@ -63,11 +63,4 @@
         overflow: hidden;
     }
 
-    .panel-footer {
-        color: var(--text-primary, #00ff00);
-        font-size: 12px;
-        white-space: pre;
-        padding: 4px 0;
-        flex-shrink: 0;
-    }
 </style>

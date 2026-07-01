@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { MemoryEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -9,28 +10,38 @@
     }
     
     let { config, onScoreUpdate, onComplete, onFail }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game phases: 'showing' | 'input' | 'complete'
     let phase = $state<'showing' | 'input' | 'complete'>('showing');
     let playerSequence = $state<string[]>([]);
-    let showTimer = $state(config.config.displayTime);
+    let showTimer = $state(gameConfig.displayTime);
     let isComplete = $state(false);
     let showHighlight = $state<string | null>(null);
     
     // Generate sequence immediately (not in effect)
-    const pool = config.config.itemPool;
+    const pool = gameConfig.itemPool;
     const sequence: string[] = [];
-    for (let i = 0; i < config.config.sequenceLength; i++) {
+    for (let i = 0; i < gameConfig.sequenceLength; i++) {
         const randomItem = pool[Math.floor(Math.random() * pool.length)];
         sequence.push(randomItem.id);
     }
     
     // Calculate max score (100 points per correct item)
-    const maxScore = config.config.sequenceLength * 100;
+    const maxScore = gameConfig.sequenceLength * 100;
     
     // Timer refs
     let showInterval: ReturnType<typeof setInterval> | null = null;
     let timerInterval: ReturnType<typeof setInterval> | null = null;
+    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+
+    function schedule(callback: () => void, delay: number) {
+        const timeout = setTimeout(() => {
+            pendingTimeouts.delete(timeout);
+            callback();
+        }, delay);
+        pendingTimeouts.add(timeout);
+    }
     
     // Start game on mount using $effect with no dependencies tracking
     $effect(() => {
@@ -41,12 +52,13 @@
         return () => {
             if (showInterval) clearInterval(showInterval);
             if (timerInterval) clearInterval(timerInterval);
+            for (const timeout of pendingTimeouts) clearTimeout(timeout);
         };
     });
     
     function startShowPhase() {
         phase = 'showing';
-        showTimer = config.config.displayTime;
+        showTimer = gameConfig.displayTime;
         
         // Animate through sequence
         let itemIndex = 0;
@@ -56,7 +68,7 @@
                 itemIndex++;
                 
                 // Clear highlight after 400ms
-                setTimeout(() => {
+                schedule(() => {
                     showHighlight = null;
                 }, 400);
             } else {
@@ -84,7 +96,7 @@
         
         // Show brief highlight
         showHighlight = itemId;
-        setTimeout(() => {
+        schedule(() => {
             showHighlight = null;
         }, 200);
         
@@ -123,7 +135,7 @@
     }
     
     function getItemById(id: string) {
-        return config.config.itemPool.find(item => item.id === id);
+        return gameConfig.itemPool.find(item => item.id === id);
     }
 </script>
 
@@ -132,7 +144,7 @@
         <div class="phase-header">
             <h3>👀 Watch the sequence...</h3>
             <div class="timer-bar">
-                <div class="timer-fill" style="width: {(showTimer / config.config.displayTime) * 100}%"></div>
+                <div class="timer-fill" style="width: {(showTimer / gameConfig.displayTime) * 100}%"></div>
             </div>
         </div>
         
@@ -173,7 +185,7 @@
         </div>
         
         <div class="item-grid">
-            {#each config.config.itemPool as item}
+            {#each gameConfig.itemPool as item}
                 <button
                     class="item-button"
                     class:highlight={showHighlight === item.id}

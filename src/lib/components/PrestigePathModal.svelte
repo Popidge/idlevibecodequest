@@ -1,7 +1,7 @@
 <script lang="ts">
     import { store, formatNumber } from '$lib/game/store.svelte';
     import type { PrestigePath } from '$lib/game/types';
-    import { TECH_DEBT } from '$lib/game/constants';
+    import { PRESTIGE } from '$lib/game/constants';
     
     const paths = [
         {
@@ -81,50 +81,50 @@
                                 {#if path.id === 'buyout'}
                                     <div class="bonus-row">
                                         <span class="bonus-label">Starting Cash:</span>
-                                        <span class="bonus-value">+${formatNumber(points * 5000)}</span>
+                                        <span class="bonus-value">+${formatNumber(points * PRESTIGE.STARTING_CASH_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row">
                                         <span class="bonus-label">Cash Multiplier:</span>
-                                        <span class="bonus-value">+{formatMultiplier(points * 0.20)}</span>
+                                        <span class="bonus-value">+{formatMultiplier(points * PRESTIGE.CASH_MULTIPLIER_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Starting:</span>
-                                        <span class="bonus-value">${formatNumber(mods.startingCashFlat + (points * 5000))}</span>
+                                        <span class="bonus-value">${formatNumber(mods.startingCashFlat + ((store.gameState.prestige?.pathPoints.buyout ?? 0) + points) * PRESTIGE.STARTING_CASH_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Cash Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(mods.moneyMultiplier + (points * 0.20))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.moneyMultiplier + (points * PRESTIGE.CASH_MULTIPLIER_PER_POINT))}</span>
                                     </div>
                                 {:else if path.id === 'nirvana'}
                                     <div class="bonus-row">
                                         <span class="bonus-label">LoC Multiplier:</span>
-                                        <span class="bonus-value">+{formatMultiplier(points * 0.15)}</span>
+                                        <span class="bonus-value">+{formatMultiplier(points * PRESTIGE.LOC_MULTIPLIER_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total LoC Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(mods.locMultiplier + (points * 0.15))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.locMultiplier + (points * PRESTIGE.LOC_MULTIPLIER_PER_POINT))}</span>
                                     </div>
                                 {:else if path.id === 'linus'}
                                     <div class="bonus-row">
                                         <span class="bonus-label">Cred Multiplier:</span>
-                                        <span class="bonus-value">+{formatMultiplier(points * 0.25)}</span>
+                                        <span class="bonus-value">+{formatMultiplier(points * PRESTIGE.CRED_MULTIPLIER_PER_POINT)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Cred Bonus:</span>
-                                        <span class="bonus-value">+{formatMultiplier(mods.credMultiplier + (points * 0.25))}</span>
+                                        <span class="bonus-value">+{formatMultiplier(mods.credMultiplier + (points * PRESTIGE.CRED_MULTIPLIER_PER_POINT))}</span>
                                     </div>
                                 {:else}
                                     <div class="bonus-row">
-                                        <span class="bonus-label">Debt Multiplier:</span>
-                                        <span class="bonus-value">-{formatMultiplier(mods.techTreeDebtMultiplier)}</span>
+                                        <span class="bonus-label">Debt Penalty:</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * PRESTIGE.DEBT_PENALTY_REDUCTION)}</span>
                                     </div>
                                     <div class="bonus-row">
                                         <span class="bonus-label">Accumulation:</span>
-                                        <span class="bonus-value">-{formatMultiplier(points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT)}</span>
+                                        <span class="bonus-value">-{formatMultiplier(points * PRESTIGE.DEBT_ACCUMULATION_REDUCTION)}</span>
                                     </div>
                                     <div class="bonus-row total">
                                         <span class="bonus-label">Total Relief:</span>
-                                        <span class="bonus-value">-{formatMultiplier(mods.techTreeDebtMultiplier + (points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT))}</span>
+                                        <span class="bonus-value">-{formatMultiplier(Math.min(1, mods.techTreeDebtMultiplier + mods.prestigeDebtModifier + (points * PRESTIGE.DEBT_PENALTY_REDUCTION)))}</span>
                                     </div>
                                 {/if}
                             </div>

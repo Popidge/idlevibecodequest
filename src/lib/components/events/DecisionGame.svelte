@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onDestroy, untrack } from 'svelte';
     import type { DecisionEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -9,24 +10,26 @@
     }
     
     let { config, onScoreUpdate, onComplete, onFail }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game state
     let currentRound = $state(0);
     let score = $state(0);
-    let timeRemaining = $state(config.config.timePerDecision || 5);
+    let timeRemaining = $state(gameConfig.timePerDecision || 5);
     let isShowingResult = $state(false);
     let lastResult = $state<'correct' | 'wrong' | null>(null);
     let isComplete = $state(false);
     let timerInterval: ReturnType<typeof setInterval> | null = null;
+    let nextRoundTimeout: ReturnType<typeof setTimeout> | null = null;
     
-    const rounds = config.config.choices || [];
+    const rounds = gameConfig.choices || [];
     const maxScore = rounds.length * 100; // 100 points per correct answer
     
     // Start timer for current round
     $effect(() => {
         if (isComplete || isShowingResult || rounds.length === 0) return;
         
-        timeRemaining = config.config.timePerDecision || 5;
+        timeRemaining = gameConfig.timePerDecision || 5;
         
         timerInterval = setInterval(() => {
             timeRemaining -= 0.1;
@@ -40,13 +43,17 @@
             if (timerInterval) clearInterval(timerInterval);
         };
     });
+
+    onDestroy(() => {
+        if (nextRoundTimeout) clearTimeout(nextRoundTimeout);
+    });
     
     function handleTimeout() {
         // Time's up - wrong answer
         lastResult = 'wrong';
         isShowingResult = true;
         
-        setTimeout(() => {
+        nextRoundTimeout = setTimeout(() => {
             nextRound();
         }, 1000);
     }
@@ -69,7 +76,7 @@
         
         onScoreUpdate(score, maxScore);
         
-        setTimeout(() => {
+        nextRoundTimeout = setTimeout(() => {
             nextRound();
         }, 800);
     }
@@ -90,8 +97,8 @@
     }
     
     function getProgressPercent(): number {
-        if (!config.config.timePerDecision) return 100;
-        return (timeRemaining / config.config.timePerDecision) * 100;
+        if (!gameConfig.timePerDecision) return 100;
+        return (timeRemaining / gameConfig.timePerDecision) * 100;
     }
 </script>
 

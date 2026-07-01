@@ -19,28 +19,7 @@
     }
 
     function resetToDefaults() {
-        Object.assign(config, {
-            clickRate: 3,
-            baseDebtPerClick: 0.00008,
-            debtPerProject: 0.00001,
-            delegationDebtRate: 0.1,
-            maxDebt: 0.5,
-            upgradeCostMultiplier: 1.15,
-            prestigeThresholdPercent: 0.7,
-            startingCashPerPoint: 5000,
-            cashMultiplierPerPoint: 0.20,
-            locMultiplierPerPoint: 0.15,
-            credMultiplierPerPoint: 0.25,
-            techTreeMoneyMultiplier: 0,
-            techTreeLocMultiplier: 0,
-            techTreeCredMultiplier: 0,
-            techTreeLocPerClickBonus: 0,
-            techTreePassiveLocBonus: 0,
-            techTreeDebtAccumReduction: 0,
-            techTreeDebtPenaltyReduction: 0,
-            techTreeDebtClearingEfficiency: 1,
-            autoPurchaseThreshold: 1.0
-        });
+        Object.assign(config, tuningPresets.baseline);
         selectedPreset = 'custom';
     }
 </script>
@@ -95,18 +74,10 @@
         
         <div class="control-row">
             <label>
-                Base Debt per Click
-                <input type="number" step="0.00001" min="0" max="0.001" bind:value={config.baseDebtPerClick} />
+                Base Debt per LoC
+                <input type="number" step="0.1" min="0" max="10" bind:value={config.baseDebtPerClick} />
             </label>
-            <span class="hint">Debt accumulated per click (default: 0.00008)</span>
-        </div>
-
-        <div class="control-row">
-            <label>
-                Debt per Project Shipped
-                <input type="number" step="0.000001" min="0" max="0.0001" bind:value={config.debtPerProject} />
-            </label>
-            <span class="hint">Additional debt per project (default: 0.00001)</span>
+            <span class="hint">Debt accumulated per generated LoC</span>
         </div>
 
         <div class="control-row">
@@ -120,14 +91,27 @@
         <div class="control-row">
             <label>
                 Max Debt Cap
-                <input type="number" step="0.05" min="0.1" max="1" bind:value={config.maxDebt} />
+                <input type="number" step="100" min="100" max="10000" bind:value={config.maxDebt} />
             </label>
-            <span class="hint">Maximum debt percentage (default: 0.5)</span>
+            <span class="hint">Maximum internal debt units (default: 5000)</span>
         </div>
     </div>
 
     <div class="controls-section">
         <h4>Prestige System</h4>
+
+        <div class="control-row">
+            <label>
+                Simulated Path
+                <select bind:value={config.prestigePath}>
+                    <option value="buyout">Buyout</option>
+                    <option value="nirvana">Nirvana</option>
+                    <option value="linus">Linus</option>
+                    <option value="learning">Learning</option>
+                </select>
+            </label>
+            <span class="hint">Path chosen at each simulated prestige</span>
+        </div>
         
         <div class="control-row">
             <label>

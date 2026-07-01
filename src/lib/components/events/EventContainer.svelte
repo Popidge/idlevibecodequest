@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { RandomEventConfig, ActiveEventState, EventMechanicType } from '$lib/game/event-types';
     import { store } from '$lib/game/store.svelte';
     import ReactionGame from './ReactionGame.svelte';
@@ -15,11 +16,12 @@
     }
     
     let { eventConfig, onComplete, onAbandon }: Props = $props();
+    const initialDuration = untrack(() => eventConfig.notificationDuration);
     
     // Game state
     let score = $state(0);
     let maxScore = $state(0);
-    let timeRemaining = $state(eventConfig.notificationDuration);
+    let timeRemaining = $state(initialDuration);
     let gameStatus = $state<'playing' | 'completed' | 'failed'>('playing');
     let timerInterval: ReturnType<typeof setInterval> | null = null;
     
@@ -51,6 +53,7 @@
     }
     
     function handleGameComplete(finalScore: number, finalMaxScore: number) {
+        if (gameStatus !== 'playing') return;
         score = finalScore;
         maxScore = finalMaxScore;
         gameStatus = 'completed';
@@ -63,6 +66,7 @@
     }
     
     function handleGameFail(reason: string) {
+        if (gameStatus !== 'playing') return;
         gameStatus = 'failed';
         if (timerInterval) clearInterval(timerInterval);
         onAbandon();
@@ -71,7 +75,6 @@
     function handleAbandon() {
         gameStatus = 'failed';
         if (timerInterval) clearInterval(timerInterval);
-        store.abandonRandomEvent();
         onAbandon();
     }
     

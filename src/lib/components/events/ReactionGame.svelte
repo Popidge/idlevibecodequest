@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { ReactionEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -8,6 +9,7 @@
     }
     
     let { config, onScoreUpdate, onComplete }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game state
     let score = $state(0);
@@ -24,11 +26,12 @@
     }>>([]);
     let spawnInterval: ReturnType<typeof setInterval> | null = null;
     let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
     let isComplete = $state(false);
     
     // Calculate max possible score
-    const maxPossibleTargets = Math.floor(config.config.duration * config.config.spawnRate);
-    const maxGoodTargetScore = Math.max(...config.config.targetTypes.filter(t => t.isGood).map(t => t.score), 10);
+    const maxPossibleTargets = Math.floor(gameConfig.duration * gameConfig.spawnRate);
+    const maxGoodTargetScore = Math.max(...gameConfig.targetTypes.filter(t => t.isGood).map(t => t.score), 10);
     const maxPossibleScore = maxPossibleTargets * maxGoodTargetScore;
     
     // Start the game
@@ -36,7 +39,7 @@
         if (isComplete) return;
         
         // Start spawning targets
-        const spawnDelay = 1000 / config.config.spawnRate;
+        const spawnDelay = 1000 / gameConfig.spawnRate;
         let spawnCount = 0;
         const maxSpawns = maxPossibleTargets;
         
@@ -61,17 +64,18 @@
         // End game after duration
         const timeout = setTimeout(() => {
             endGame();
-        }, config.config.duration * 1000);
+        }, gameConfig.duration * 1000);
         
         return () => {
             if (spawnInterval) clearInterval(spawnInterval);
             if (cleanupInterval) clearInterval(cleanupInterval);
             clearTimeout(timeout);
+            for (const pending of pendingTimeouts) clearTimeout(pending);
         };
     });
     
     function spawnTarget() {
-        const targetTypes = config.config.targetTypes;
+        const targetTypes = gameConfig.targetTypes;
         const totalWeight = targetTypes.reduce((sum, t) => sum + t.weight, 0);
         let rand = Math.random() * totalWeight;
         
@@ -85,7 +89,7 @@
         }
         
         // Calculate spawn position (within configured area)
-        const area = config.config.spawnArea;
+        const area = gameConfig.spawnArea;
         const margin = (100 - area.width) / 2;
         const x = margin + Math.random() * area.width;
         const y = 10 + Math.random() * (area.height - 10);
@@ -118,9 +122,11 @@
         }
         
         // Remove clicked target after animation
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
+            pendingTimeouts.delete(timeout);
             targets = targets.filter(t => t.id !== targetId);
         }, 300);
+        pendingTimeouts.add(timeout);
         
         onScoreUpdate(score, maxPossibleScore);
     }
@@ -140,7 +146,7 @@
         <span class="score-value">{score}</span>
     </div>
     
-    <div class="target-area" style="--spawn-width: {config.config.spawnArea.width}%; --spawn-height: {config.config.spawnArea.height}%;">
+    <div class="target-area" style="--spawn-width: {gameConfig.spawnArea.width}%; --spawn-height: {gameConfig.spawnArea.height}%;">
         {#each targets as target (target.id)}
             <button
                 class="target"
@@ -157,7 +163,7 @@
     </div>
     
     <div class="legend">
-        {#each config.config.targetTypes as type}
+        {#each gameConfig.targetTypes as type}
             <div class="legend-item">
                 <span class="legend-emoji">{type.emoji}</span>
                 <span class="legend-text">

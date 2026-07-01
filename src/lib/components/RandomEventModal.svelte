@@ -15,7 +15,7 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             if (showGame) {
-                showGame = false;
+                handleGameAbandon();
             } else {
                 store.closeRandomEventModal();
             }
@@ -265,13 +265,6 @@
         color: var(--text-primary, #00ff00);
         font-size: 16px;
         font-weight: bold;
-    }
-
-    .reward-note {
-        display: block;
-        color: var(--text-dim, #008800);
-        font-size: 10px;
-        margin-top: 4px;
     }
 
     .action-btn {

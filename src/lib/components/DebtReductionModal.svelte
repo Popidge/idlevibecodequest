@@ -1,18 +1,17 @@
 <script lang="ts">
     import { store, formatNumber, formatMoney } from '$lib/game/store.svelte';
     import { TECH_DEBT, PROJECTS } from '$lib/game/constants';
+    import { calculateDebtReductionCosts } from '$lib/game/economy';
     
     // Reduction amount in debt level units (not percentage)
     let reductionAmount = $state(TECH_DEBT.MIN_REDUCTION) as number; // Start with 1% (50 level units for MAX_LEVEL=5000)
     let paymentType = $state<'loc' | 'cash'>('loc');
     
     // Calculate costs based on new formula: debt / 2 LoC
-    const locCost = $derived(Math.floor(reductionAmount / 2));
-    
-    // Cash cost: LoC cost × (cheapest project LoC cost / reward)
     const cheapestProject = PROJECTS.standard[0]; // Todo App
-    const locValue = cheapestProject.locCost / cheapestProject.reward;
-    const cashCost = $derived(Math.floor(locCost * locValue));
+    const reductionCosts = $derived(calculateDebtReductionCosts(reductionAmount, cheapestProject));
+    const locCost = $derived(reductionCosts.loc);
+    const cashCost = $derived(reductionCosts.cash);
     
     const newDebt = $derived(Math.max(0, store.gameState.techDebt - reductionAmount));
     
