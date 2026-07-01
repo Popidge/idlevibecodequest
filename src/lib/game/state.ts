@@ -53,7 +53,7 @@ function nodeIndices(value: unknown): number[] {
     return [...new Set(value.filter(item => Number.isInteger(item) && item >= 0 && item < 10))] as number[];
 }
 
-export function hydrateGameState(value: unknown, now = Date.now()): GameState {
+export function hydrateGameState(value: unknown, now = Date.now(), migrateLegacyDebt = false): GameState {
     const fallback = createDefaultGameState(now);
     const candidate = object(value);
     const resources = object(candidate.resources);
@@ -65,7 +65,7 @@ export function hydrateGameState(value: unknown, now = Date.now()): GameState {
     const pathPoints = object(prestige.pathPoints);
 
     const rawDebt = nonNegativeNumber(candidate.techDebt, 0);
-    const migratedDebt = rawDebt > 0 && rawDebt <= 0.5 ? rawDebt * 10000 : rawDebt;
+    const migratedDebt = migrateLegacyDebt && rawDebt > 0 && rawDebt <= 0.5 ? rawDebt * 10000 : rawDebt;
 
     return {
         resources: {
@@ -120,7 +120,8 @@ export function hydrateGameState(value: unknown, now = Date.now()): GameState {
 export function parseSave(raw: string, now = Date.now()): GameState {
     const parsed: unknown = JSON.parse(raw);
     const record = object(parsed);
-    return hydrateGameState('state' in record ? record.state : record, now);
+    const isEnvelope = 'state' in record;
+    return hydrateGameState(isEnvelope ? record.state : record, now, !isEnvelope);
 }
 
 export function createSaveEnvelope(state: GameState, savedAt = Date.now()): SaveEnvelope {

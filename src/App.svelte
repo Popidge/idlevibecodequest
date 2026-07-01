@@ -43,9 +43,16 @@
     onMount(() => {
         store.init();
         const saveBeforeUnload = () => store.saveGame(false);
+        const saveWhenHidden = () => {
+            if (document.visibilityState === 'hidden') saveBeforeUnload();
+        };
         window.addEventListener('beforeunload', saveBeforeUnload);
+        window.addEventListener('pagehide', saveBeforeUnload);
+        document.addEventListener('visibilitychange', saveWhenHidden);
         return () => {
             window.removeEventListener('beforeunload', saveBeforeUnload);
+            window.removeEventListener('pagehide', saveBeforeUnload);
+            document.removeEventListener('visibilitychange', saveWhenHidden);
             store.saveGame(false);
         };
     });

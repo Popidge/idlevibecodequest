@@ -140,6 +140,12 @@
     @keyframes eventPulse {
         50% { box-shadow: 0 0 12px rgba(255, 0, 255, 0.8); }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+        .event-btn {
+            animation: none;
+        }
+    }
     
     .header-btn:hover {
         background-color: var(--button-hover, #2a2a2a);

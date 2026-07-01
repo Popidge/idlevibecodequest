@@ -220,16 +220,16 @@ export const TECH_TREES: Record<TechTree['path'], TechTree> = {
         color: '#ff00ff',
         description: 'Tech debt mastery',
         nodes: [
-            { id: 'read_the_docs', name: 'Read the Docs', description: 'Reduces debt accumulation by 10%', cost: 1, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: 'Reduces debt accumulation by 20%', cost: 2, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'pair_programming', name: 'Pair Programming', description: 'Reduces debt accumulation by 30%', cost: 3, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'code_review', name: 'Code Review', description: 'Reduces debt accumulation by 40%', cost: 4, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: 'Reduces debt accumulation by 50%', cost: 5, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'refactoring', name: 'Refactoring', description: 'Reduces debt accumulation by 60%', cost: 6, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'writing_tests', name: 'Writing Tests', description: 'Reduces debt accumulation by 70%', cost: 7, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'architecture_patterns', name: 'Architecture Patterns', description: 'Reduces debt accumulation by 80%', cost: 8, modifiers: { techTreeDebtMultiplier: 0.1 } },
-            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Eliminates tech debt penalty (full income)', cost: 9, modifiers: { techTreeDebtMultiplier: 0.2 } },
-            { id: 'code_zen', name: 'Code Zen', description: 'Tech debt becomes a bonus instead of penalty', cost: 10, modifiers: { unlockCodeZen: true } }
+            { id: 'read_the_docs', name: 'Read the Docs', description: 'Reduces debt accumulation and penalty by 10%', cost: 1, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'rubber_duck', name: 'Rubber Duck Debugging', description: 'Reduces debt accumulation and penalty by 20%', cost: 2, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'pair_programming', name: 'Pair Programming', description: 'Reduces debt accumulation and penalty by 30%', cost: 3, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'code_review', name: 'Code Review', description: 'Reduces debt accumulation and penalty by 40%', cost: 4, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'tech_debt_sprint', name: 'Technical Debt Sprint', description: 'Reduces debt accumulation and penalty by 50%', cost: 5, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'refactoring', name: 'Refactoring', description: 'Reduces debt accumulation and penalty by 60%', cost: 6, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'writing_tests', name: 'Writing Tests', description: 'Reduces debt accumulation and penalty by 70%', cost: 7, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'architecture_patterns', name: 'Architecture Patterns', description: 'Reduces debt accumulation and penalty by 80%', cost: 8, modifiers: { techTreeDebtMultiplier: 0.1 } },
+            { id: 'legacy_whisperer', name: 'Legacy Whisperer', description: 'Eliminates debt accumulation and income penalty', cost: 9, modifiers: { techTreeDebtMultiplier: 0.2 } },
+            { id: 'code_zen', name: 'Code Zen', description: 'Eliminates accumulation and turns debt into an income bonus', cost: 10, modifiers: { unlockCodeZen: true } }
         ]
     }
 };

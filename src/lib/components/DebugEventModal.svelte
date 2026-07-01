@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { store } from '$lib/game/store.svelte';
 
     interface Props {
@@ -6,6 +7,14 @@
     }
 
     let { onClose }: Props = $props();
+    let dialog: HTMLDialogElement;
+
+    onMount(() => {
+        dialog.showModal();
+        return () => {
+            if (dialog.open) dialog.close();
+        };
+    });
 
     // Get list of all available events
     const eventList = store.getDebugEventList();
@@ -16,10 +25,9 @@
         }
     }
 
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Escape') {
-            onClose();
-        }
+    function handleCancel(event: Event) {
+        event.preventDefault();
+        onClose();
     }
 
     function triggerEvent(eventId: string) {
@@ -53,9 +61,7 @@
     };
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<dialog open class="modal-backdrop" onclick={handleBackdropClick} aria-label="Debug Event Trigger">
+<dialog bind:this={dialog} class="modal-backdrop" onclick={handleBackdropClick} oncancel={handleCancel} aria-label="Debug Event Trigger">
     <div class="modal-content">
         <div class="modal-header">
             <span class="header-title">┌─ DEBUG: TRIGGER EVENT ─┐</span>

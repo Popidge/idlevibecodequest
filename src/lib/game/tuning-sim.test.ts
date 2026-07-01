@@ -10,4 +10,14 @@ describe('tuning simulator', () => {
             expect(result.timeToSecondPrestige).toBeGreaterThan(0);
         }
     });
+
+    it('keeps zero tuning denominators finite', () => {
+        const result = simulateGameplay({
+            ...defaultConfig,
+            maxDebt: 0,
+            prestigeThresholdPercent: 0
+        }, 1);
+        expect(Number.isFinite(result.finalDebtPenaltyFactor)).toBe(true);
+        expect(result.finalDebtPenaltyFactor).toBe(1);
+    });
 });

@@ -180,7 +180,9 @@ function getUnlockedProjects(cred: number): string[] {
 }
 
 function getDebtPenaltyFactor(state: SimulationState, config: TuningConfig): number {
-    const debtRatio = Math.min(Math.max(state.techDebt / config.maxDebt, 0), 1);
+    const debtRatio = config.maxDebt > 0
+        ? Math.min(Math.max(state.techDebt / config.maxDebt, 0), 1)
+        : 0;
     const pathMitigation = config.prestigePath === 'learning'
         ? state.prestigePathPoints * PRESTIGE.DEBT_PENALTY_REDUCTION
         : 0;
@@ -189,7 +191,9 @@ function getDebtPenaltyFactor(state: SimulationState, config: TuningConfig): num
 }
 
 function calculatePrestigePoints(upgradePoints: number, totalAvailable: number, threshold: number): number {
-    return Math.max(Math.floor(upgradePoints / (totalAvailable * threshold)), PRESTIGE.MIN_POINTS);
+    const thresholdValue = totalAvailable * threshold;
+    if (thresholdValue <= 0) return PRESTIGE.MIN_POINTS;
+    return Math.max(Math.floor(upgradePoints / thresholdValue), PRESTIGE.MIN_POINTS);
 }
 
 // ============================================

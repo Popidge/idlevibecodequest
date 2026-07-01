@@ -9,9 +9,7 @@
     
     // Calculate costs based on new formula: debt / 2 LoC
     const cheapestProject = PROJECTS.standard[0]; // Todo App
-    const reductionCosts = $derived(calculateDebtReductionCosts(reductionAmount, cheapestProject));
-    const locCost = $derived(reductionCosts.loc);
-    const cashCost = $derived(reductionCosts.cash);
+    let { loc: locCost, cash: cashCost } = $derived(calculateDebtReductionCosts(reductionAmount, cheapestProject));
     
     const newDebt = $derived(Math.max(0, store.gameState.techDebt - reductionAmount));
     

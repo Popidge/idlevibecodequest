@@ -37,6 +37,14 @@ describe('save migration', () => {
         expect(migrated.prestige!.pathPoints).toEqual({ buyout: 0, nirvana: 0, linus: 0, learning: 0 });
     });
 
+    it('preserves small debt values in versioned saves', () => {
+        const state = createDefaultGameState(100);
+        state.techDebt = 0.25;
+        const envelope = createSaveEnvelope(state, 200);
+        expect(envelope.version).toBe(SAVE_VERSION);
+        expect(parseSave(JSON.stringify(envelope), 300).techDebt).toBe(0.25);
+    });
+
     it('sanitizes partial and malformed fields', () => {
         const hydrated = hydrateGameState({
             resources: { money: -1, loc: Number.NaN, cred: 8 },

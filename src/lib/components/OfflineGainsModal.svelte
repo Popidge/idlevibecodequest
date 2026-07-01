@@ -26,7 +26,7 @@
 {#if store.showOfflineModal && store.offlineGains}
     {@const gains = store.offlineGains}
     <dialog open class="offline-modal" onclick={handleDismiss} aria-label="Offline gains">
-        <div class="offline-content">
+        <div class="offline-content" role="alert" aria-live="polite">
             <div class="offline-header">┌─ WELCOME BACK! ───────────┐</div>
             <div class="offline-body">
                 <p class="offline-message">You were away for <span class="time">{formatHours(gains.hoursOffline)}</span></p>

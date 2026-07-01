@@ -2,6 +2,13 @@ import { PRESTIGE, TECH_DEBT, type Project } from './constants';
 import type { EventReward } from './event-types';
 import type { PrestigePath, SystemModifiers } from './types';
 
+const DEFAULT_REWARD_TIERS: NonNullable<EventReward['tiers']> = [
+    { threshold: 0.9, multiplier: 2 },
+    { threshold: 0.7, multiplier: 1 },
+    { threshold: 0.5, multiplier: 0.5 },
+    { threshold: 0, multiplier: 0.25 }
+];
+
 export function clamp(value: number, minimum: number, maximum: number): number {
     return Math.min(Math.max(value, minimum), maximum);
 }
@@ -25,12 +32,7 @@ export function calculateEventRewardAmount(reward: EventReward, rawPerformance: 
     const performance = clamp(rawPerformance, 0, 1);
     if (reward.scalingMode === 'performance') return reward.baseAmount * performance;
     if (reward.scalingMode === 'tiered') {
-        const tiers = reward.tiers ?? [
-            { threshold: 0.9, multiplier: 2 },
-            { threshold: 0.7, multiplier: 1 },
-            { threshold: 0.5, multiplier: 0.5 },
-            { threshold: 0, multiplier: 0.25 }
-        ];
+        const tiers = reward.tiers ?? DEFAULT_REWARD_TIERS;
         const tier = [...tiers].sort((a, b) => b.threshold - a.threshold)
             .find(candidate => performance >= candidate.threshold);
         return reward.baseAmount * (tier?.multiplier ?? 0);

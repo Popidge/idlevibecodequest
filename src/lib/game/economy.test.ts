@@ -63,6 +63,14 @@ describe('event and passive bonuses', () => {
         expect(calculateEventRewardAmount(reward, 0.2)).toBe(10);
     });
 
+    it('uses the default tier table when no tiers are configured', () => {
+        const reward: EventReward = { type: 'cash', baseAmount: 100, scalingMode: 'tiered' };
+        expect(calculateEventRewardAmount(reward, 0.95)).toBe(200);
+        expect(calculateEventRewardAmount(reward, 0.75)).toBe(100);
+        expect(calculateEventRewardAmount(reward, 0.55)).toBe(50);
+        expect(calculateEventRewardAmount(reward, 0.2)).toBe(25);
+    });
+
     it('applies delegation buffs to passive LoC', () => {
         expect(calculateEffectivePassiveLocRate(10, 0.25, 2, 1.4, 1.5)).toBe(27.75);
     });

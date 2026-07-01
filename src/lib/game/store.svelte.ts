@@ -737,18 +737,26 @@ class GameStore {
         }
     }
 
+    private resetTransientState() {
+        this.currentPrompt = PROMPT_MESSAGES[0];
+        this.floatTexts = [];
+        this.hints = [];
+        this.debtLowHintShown = false;
+        this.previousDebtState = 'low';
+        this.notificationQueue = [];
+        this.randomEventWaitSeconds = 0;
+        this.randomEventState = { active: false, eventId: null, timer: 0, cooldown: 0 };
+        this.showRandomEventModal = false;
+        this.activeRandomEvent = null;
+        this.activeBuffs = [];
+    }
+
     resetGame() {
         if (confirm('Are you sure you want to reset the game? All progress will be lost!')) {
             localStorage.removeItem('vibeCodeClicker');
             localStorage.removeItem('vibeCodeClicker_tutorial');
             this.gameState = createDefaultGameState();
-            this.currentPrompt = PROMPT_MESSAGES[0];
-            this.floatTexts = [];
-            this.hints = [];
-            this.debtLowHintShown = false;
-            this.previousDebtState = 'low';
-            this.notificationQueue = []; // Clear notification queue on reset
-            this.randomEventWaitSeconds = 0;
+            this.resetTransientState();
             this.hasSeenHowToPlay = false;
             this.showNotification('Game reset!');
         }
@@ -1010,13 +1018,7 @@ class GameStore {
             localStorage.removeItem('vibeCodeClicker');
             localStorage.removeItem('vibeCodeClicker_tutorial');
             this.gameState = createDefaultGameState();
-            this.currentPrompt = PROMPT_MESSAGES[0];
-            this.floatTexts = [];
-            this.hints = [];
-            this.debtLowHintShown = false;
-            this.previousDebtState = 'low';
-            this.notificationQueue = []; // Clear notification queue on hard reset
-            this.randomEventWaitSeconds = 0;
+            this.resetTransientState();
             this.hasSeenHowToPlay = false;
             this.showNotification('Full reset complete!');
         }
