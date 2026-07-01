@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import type { PatternEvent } from '$lib/game/event-types';
     
     interface Props {
@@ -9,32 +10,35 @@
     }
     
     let { config, onScoreUpdate, onComplete, onFail }: Props = $props();
+    const gameConfig = untrack(() => config.config);
     
     // Game state
     let currentRound = $state(0);
     let score = $state(0);
-    let timeRemaining = $state(config.config.timePerRound);
+    let timeRemaining = $state(gameConfig.timePerRound);
     let isShowingResult = $state(false);
     let lastResult = $state<'correct' | 'wrong' | null>(null);
     let isComplete = $state(false);
     let timerInterval: ReturnType<typeof setInterval> | null = null;
+    let nextRoundTimeout: ReturnType<typeof setTimeout> | null = null;
     
     // Shuffle patterns for variety
-    let patterns = $state([...config.config.patterns].sort(() => Math.random() - 0.5).slice(0, config.config.rounds));
+    let patterns = $state([...gameConfig.patterns].sort(() => Math.random() - 0.5).slice(0, gameConfig.rounds));
     
-    const maxScore = config.config.rounds * 100;
+    const maxScore = gameConfig.rounds * 100;
     
     $effect(() => {
         startTimer();
         
         return () => {
             if (timerInterval) clearInterval(timerInterval);
+            if (nextRoundTimeout) clearTimeout(nextRoundTimeout);
         };
     });
     
     function startTimer() {
         if (timerInterval) clearInterval(timerInterval);
-        timeRemaining = config.config.timePerRound;
+        timeRemaining = gameConfig.timePerRound;
         
         timerInterval = setInterval(() => {
             timeRemaining -= 0.1;
@@ -49,7 +53,7 @@
         lastResult = 'wrong';
         isShowingResult = true;
         
-        setTimeout(() => {
+        nextRoundTimeout = setTimeout(() => {
             nextRound();
         }, 1000);
     }
@@ -72,7 +76,7 @@
         
         onScoreUpdate(score, maxScore);
         
-        setTimeout(() => {
+        nextRoundTimeout = setTimeout(() => {
             nextRound();
         }, 800);
     }
@@ -95,7 +99,7 @@
     }
     
     function getProgressPercent(): number {
-        return (timeRemaining / config.config.timePerRound) * 100;
+        return (timeRemaining / gameConfig.timePerRound) * 100;
     }
     
     function formatSequence(seq: string[]): string {

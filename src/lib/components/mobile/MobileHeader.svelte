@@ -28,6 +28,16 @@
     </div>
     
     <div class="header-right">
+        {#if store.randomEventState.active}
+            <button
+                class="header-btn event-btn"
+                onclick={() => store.engageRandomEvent()}
+                title="Random event active"
+                aria-label="Play random event, {store.randomEventState.timer} seconds remaining"
+            >
+                ⚡ <span>{store.randomEventState.timer}s</span>
+            </button>
+        {/if}
         {#if isDebugMode()}
             <button class="header-btn debug-btn" onclick={handleDebugResources} title="Debug Resources">
                 🐛
@@ -111,6 +121,30 @@
         font-size: 18px;
         cursor: pointer;
         transition: all 0.2s ease;
+    }
+
+    .event-btn {
+        width: auto;
+        padding: 0 10px;
+        gap: 4px;
+        border-color: var(--text-magenta, #ff00ff);
+        color: var(--text-magenta, #ff00ff);
+        animation: eventPulse 0.8s ease-in-out infinite;
+    }
+
+    .event-btn span {
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+    }
+
+    @keyframes eventPulse {
+        50% { box-shadow: 0 0 12px rgba(255, 0, 255, 0.8); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .event-btn {
+            animation: none;
+        }
     }
     
     .header-btn:hover {

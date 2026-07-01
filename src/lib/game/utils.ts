@@ -1,6 +1,6 @@
 // Idle Vibe Code Quest - Utility Functions
 
-import type { Upgrade } from './constants';
+import type { Project, Upgrade } from './constants';
 
 // Import UNLOCKS from constants for reference
 import { UNLOCKS } from './constants';
@@ -18,6 +18,17 @@ export function formatNumber(num: number): string {
         return (num / 1000).toFixed(1) + 'K';
     }
     return Math.floor(num).toString();
+}
+
+export function formatMoney(amount: number): string {
+    if (amount >= 1000000000) return (amount / 1000000000).toFixed(1) + 'B';
+    if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+    if (amount >= 10000) return (amount / 1000).toFixed(1) + 'K';
+    return amount.toFixed(2);
+}
+
+export function getProjectLocCost(project: Project, count: number): number {
+    return Math.floor(project.locCost * Math.pow(1.15, count));
 }
 
 /**

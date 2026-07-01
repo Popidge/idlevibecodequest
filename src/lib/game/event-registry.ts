@@ -143,7 +143,15 @@ export const RANDOM_EVENTS: RandomEventConfig[] = [];
 
 // Event configuration constants
 export const RANDOM_EVENT_CONFIG = {
-    TRIGGER_CHANCE: 300,       // 1 in 300 chance per second
+    TRIGGER_CHANCE: 180,       // 1 in 180 chance per second after the initial delay
+    MIN_TRIGGER_DELAY: 90,     // Do not interrupt the opening minute and a half
+    MAX_TRIGGER_DELAY: 240,    // Guarantee an event within four eligible minutes
     NOTIFICATION_DURATION: 30, // Show notification for 30 seconds (legacy default)
     COOLDOWN_DURATION: 60      // Cooldown for 60 seconds after event ends
 } as const;
+
+export function shouldTriggerRandomEvent(waitSeconds: number, roll = Math.random()): boolean {
+    if (waitSeconds < RANDOM_EVENT_CONFIG.MIN_TRIGGER_DELAY) return false;
+    return waitSeconds >= RANDOM_EVENT_CONFIG.MAX_TRIGGER_DELAY ||
+        roll < 1 / RANDOM_EVENT_CONFIG.TRIGGER_CHANCE;
+}

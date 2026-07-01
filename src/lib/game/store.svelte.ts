@@ -1,51 +1,12 @@
 // Idle Vibe Code Quest - Game Store (Svelte 5 $state)
 
-import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES, TECH_TREE_COSTS, type Upgrade, type Project } from './constants';
-import type { GameState, FloatText, Notification, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreeNode, TechTreePath, SystemModifiers, RandomEventState } from './types';
-import type { ActiveEventState, ActiveBuff, RandomEventConfig } from './event-types';
-import { EVENT_REGISTRY, RANDOM_EVENT_CONFIG } from './event-registry';
-import { getMaxUpgradeLevel, getUnlockedProjects, getUpgradeCost } from './utils';
-
-// Default game state
-const defaultState: GameState = {
-    resources: {
-        money: 0,
-        loc: 0,
-        cred: 0
-    },
-    upgrades: {
-        vibeCode: {},
-        delegation: {}
-    },
-    projects: {
-        standard: {},
-        saas: {},
-        openSource: {}
-    },
-    totalClicks: 0,
-    activeTab: {
-        projects: 'standard',
-        upgrades: 'vibeCode'
-    },
-    // Phase 1: Tech Debt System
-    techDebt: 0,
-    projectsShipped: 0,
-    lastSaveTime: Date.now(),
-    // Phase 3: Prestige System
-    prestige: {
-        prestigePoints: 0,
-        totalPrestiges: 0,
-        pathHistory: [],
-        runStartTime: Date.now(),
-        // Phase 4: Tech Tree purchases - bonuses now calculated dynamically from techTrees
-        techTrees: {
-            buyout: [],
-            nirvana: [],
-            linus: [],
-            learning: []
-        }
-    }
-};
+import { PROJECTS, UPGRADES, PROMPT_MESSAGES, TECH_DEBT, PRESTIGE, TECH_TREES } from './constants';
+import type { GameState, FloatText, QueuedNotification, OfflineGains, Hint, PrestigePath, PrestigeSummary, TechTreePath, SystemModifiers, RandomEventState } from './types';
+import type { ActiveBuff, RandomEventConfig } from './event-types';
+import { EVENT_REGISTRY, RANDOM_EVENT_CONFIG, shouldTriggerRandomEvent } from './event-registry';
+import { formatMoney, formatNumber, getMaxUpgradeLevel, getProjectLocCost, getUnlockedProjects, getUpgradeCost } from './utils';
+import { createDefaultGameState, createSaveEnvelope, parseSave } from './state';
+import { calculateDebtPenaltyFactor, calculateDebtReductionCosts, calculateEffectivePassiveLocRate, calculateEventRewardAmount, calculatePrestigePoints, clamp, getPrestigePathModifiers } from './economy';
 
 // Default modifiers object
 const defaultModifiers: SystemModifiers = {
@@ -60,16 +21,14 @@ const defaultModifiers: SystemModifiers = {
     // Debt Mechanics (Reworked v0.5)
     techTreeDebtMultiplier: 0,
     prestigeDebtModifier: 0,
-    unlockCodeZen: false,
-    unlockLegacyWhisperer: false
+    unlockCodeZen: false
 };
 
 // Game state class with reactive properties
 class GameStore {
-    gameState = $state<GameState>({ ...defaultState });
+    gameState = $state<GameState>(createDefaultGameState());
     currentPrompt = $state<string>(PROMPT_MESSAGES[0]);
     floatTexts = $state<FloatText[]>([]);
-    notifications = $state<Notification[]>([]);
     notificationId = 0;
     floatTextId = 0;
 
@@ -90,7 +49,6 @@ class GameStore {
     
     // Phase 2: Hint system state
     hints = $state<Hint[]>([]);
-    hintCooldowns = $state<Set<number>>(new Set());
     hintId = 0;
     
     // Phase 2: Track if debt low hint has been shown (to prevent repeat showings)
@@ -116,9 +74,9 @@ class GameStore {
     });
     showRandomEventModal = $state(false);
     activeRandomEvent = $state<RandomEventConfig | null>(null);
+    randomEventWaitSeconds = 0;
     
-    // v0.6: Enhanced Random Event System
-    activeEventState = $state<ActiveEventState | null>(null);
+    // v0.6.1: Enhanced Random Event System
     activeBuffs = $state<ActiveBuff[]>([]);
 
     // ========================================
@@ -140,17 +98,20 @@ class GameStore {
                     // Sum additive modifiers
                     for (const key of Object.keys(node.modifiers) as (keyof SystemModifiers)[]) {
                         const value = node.modifiers[key];
-                        if (typeof value === 'number') {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (mods as any)[key] = (mods as any)[key] + value;
+                        if (typeof value === 'number' && typeof mods[key] === 'number') {
+                            Object.assign(mods, { [key]: mods[key] + value });
                         } else if (typeof value === 'boolean') {
-                            // Boolean flags - set to true if present
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (mods as any)[key] = value;
+                            Object.assign(mods, { [key]: value });
                         }
                     }
                 }
             }
+        }
+
+        const pathPoints = this.gameState.prestige?.pathPoints ?? createDefaultGameState().prestige!.pathPoints;
+        const pathModifiers = getPrestigePathModifiers(pathPoints);
+        for (const [key, value] of Object.entries(pathModifiers) as [keyof SystemModifiers, number][]) {
+            if (typeof mods[key] === 'number') Object.assign(mods, { [key]: mods[key] + value });
         }
         
         return mods;
@@ -207,7 +168,13 @@ class GameStore {
     // Effective prestige modifier from prestige points
     get effectivePrestigeModifier() {
         const points = this.gameState.prestige?.prestigePoints ?? 0;
-        return Math.min(points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT, 1.0);
+        const learningPoints = this.gameState.prestige?.pathPoints.learning ?? 0;
+        return Math.min(
+            (points * TECH_DEBT.PRESTIGE_MODIFIER_PER_POINT) +
+            (learningPoints * PRESTIGE.DEBT_ACCUMULATION_REDUCTION) +
+            this.effectiveTechTreeMultiplier,
+            1.0
+        );
     }
     
     // Debt accumulation per LoC generated (applies to both active and passive)
@@ -280,10 +247,14 @@ class GameStore {
     get effectivePassiveLocRate() {
         // LoC/sec: (base + flat from tech tree + flat from buffs) × loc multiplier
         const base = this.basePassiveLocRate;
-        const techTreeFlat = base * this.activeModifiers.passiveLocRateFlat;
         const buffFlat = this.eventBuffMultipliers.passiveLocRateFlat;
-        // effectiveLocMultiplier already includes (1 + locMultiplier), so no extra multiplier needed
-        return (base + techTreeFlat + buffFlat) * this.effectiveLocMultiplier;
+        return calculateEffectivePassiveLocRate(
+            base,
+            this.activeModifiers.passiveLocRateFlat,
+            buffFlat,
+            this.eventBuffMultipliers.delegationMultiplier,
+            this.effectiveLocMultiplier
+        );
     }
 
     get effectivePassiveIncome() {
@@ -313,22 +284,8 @@ class GameStore {
     // ========================================
     
     get effectiveDebtPenaltyFactor() {
-        const mods = this.activeModifiers;
-        const debtRatio = this.gameState.techDebt / TECH_DEBT.MAX_LEVEL;
-        
-        // PRIORITY 1: Code Zen
-        // Inverts the penalty - High Debt = High Bonus
-        // Formula: 1 + [(debtRatio / 2) * (1 - treeMultiplier)]
-        if (mods.unlockCodeZen) {
-            const treeMod = 1 - (mods.techTreeDebtMultiplier ?? 0);
-            return 1 + ((debtRatio / 2) * treeMod);
-        }
-        
-        // STANDARD: Apply tree multiplier to reduce penalty
-        // Formula: 1 - [(debtRatio / 2) * (1 - treeMultiplier)]
-        // At MAX_LEVEL (5000) with no tree modifier: 1 - (0.5 * 1) = 0.5, capped at 0.5 as a defensive
-        const treeMod = 1 - (mods.techTreeDebtMultiplier ?? 0);
-        return Math.max(0.5, (1 - ((debtRatio / 2) * treeMod)));
+        const mitigation = this.activeModifiers.techTreeDebtMultiplier + this.activeModifiers.prestigeDebtModifier;
+        return calculateDebtPenaltyFactor(this.gameState.techDebt, mitigation, this.activeModifiers.unlockCodeZen);
     }
 
     // ========================================
@@ -352,7 +309,7 @@ class GameStore {
     }
 
     // ========================================
-    // EVENT BUFF MULTIPLIERS (v0.6)
+    // EVENT BUFF MULTIPLIERS (v0.6.1)
     // ========================================
     
     /**
@@ -365,22 +322,22 @@ class GameStore {
         return {
             cashMultiplier: 1 + activeBuffs
                 .filter(b => b.type === 'cashMultiplier')
-                .reduce((sum, b) => sum + (b.multiplier * 0.5), 0), // 50% of base per buff
+                .reduce((sum, b) => sum + b.multiplier, 0),
             locMultiplier: 1 + activeBuffs
                 .filter(b => b.type === 'locMultiplier')
-                .reduce((sum, b) => sum + (b.multiplier * 0.3), 0), // 30% of base per buff
+                .reduce((sum, b) => sum + b.multiplier, 0),
             credMultiplier: 1 + activeBuffs
                 .filter(b => b.type === 'credMultiplier')
-                .reduce((sum, b) => sum + (b.multiplier * 0.5), 0), // 50% of base per buff
+                .reduce((sum, b) => sum + b.multiplier, 0),
             locPerClickFlat: activeBuffs
                 .filter(b => b.type === 'locPerClick')
-                .reduce((sum, b) => sum + (b.multiplier * 2), 0), // +2 LoC per click per buff
+                .reduce((sum, b) => sum + b.multiplier, 0),
             passiveLocRateFlat: activeBuffs
                 .filter(b => b.type === 'passiveLocRate')
-                .reduce((sum, b) => sum + (b.multiplier * 5), 0), // +5 LoC/sec per buff
+                .reduce((sum, b) => sum + b.multiplier, 0),
             delegationMultiplier: 1 + activeBuffs
                 .filter(b => b.type === 'delegationMultiplier')
-                .reduce((sum, b) => sum + (b.multiplier * 0.4), 0) // 40% of base per buff
+                .reduce((sum, b) => sum + b.multiplier, 0)
         };
     }
     
@@ -448,9 +405,13 @@ class GameStore {
     // Formula: floor(totalUpgradesOwned / (totalUpgradesAvailable × threshold))
     // Minimum of PRESTIGE.MIN_POINTS (1)
     get prestigePointsToEarn() {
-        const thresholdValue = this.totalUpgradesAvailable * PRESTIGE.THRESHOLD_PERCENT;
-        const rawPoints = Math.floor(this.totalUpgradesOwned / thresholdValue);
-        return Math.max(rawPoints, PRESTIGE.MIN_POINTS);
+        return calculatePrestigePoints(
+            this.totalUpgradesOwned,
+            this.totalUpgradesAvailable,
+            PRESTIGE.THRESHOLD_PERCENT,
+            this.effectivePrestigePointMultiplier,
+            PRESTIGE.MIN_POINTS
+        );
     }
     
     // Get formatted run duration
@@ -662,13 +623,8 @@ class GameStore {
             return false;
         }
         
-        // LoC cost: debtAmount / 2
-        const locCost = Math.floor(amount / 20);
-        
-        // Cash cost: LoC cost × (cheapest project LoC cost / reward)
         const cheapestProject = PROJECTS.standard[0]; // Todo App
-        const locValue = cheapestProject.locCost / cheapestProject.reward;
-        const cashCost = Math.floor(locCost * locValue);
+        const { loc: locCost, cash: cashCost } = calculateDebtReductionCosts(amount, cheapestProject);
         
         if (paymentType === 'loc') {
             if (this.gameState.resources.loc < locCost) {
@@ -703,8 +659,8 @@ class GameStore {
         const hoursOffline = timeDiff / (1000 * 60 * 60);
         
         // Offline: 10% of passive rates
-        const offlineLocRate = this.basePassiveLocRate * 0.1;
-        const offlineCashRate = this.basePassiveIncome * 0.1 * this.effectiveDebtPenaltyFactor;
+        const offlineLocRate = this.effectivePassiveLocRate * 0.1;
+        const offlineCashRate = this.effectivePassiveIncome * 0.1;
         
         const locGained = Math.floor(offlineLocRate * hoursOffline * 3600);
         const cashGained = Math.floor(offlineCashRate * hoursOffline * 3600);
@@ -727,13 +683,15 @@ class GameStore {
         this.showOfflineModal = false;
     }
 
-    saveGame() {
-        this.gameState.lastSaveTime = Date.now();
-        const saveData = JSON.stringify($state.snapshot(this.gameState));
+    saveGame(notify = true) {
+        const savedAt = Date.now();
+        this.gameState.lastSaveTime = savedAt;
+        const snapshot = $state.snapshot(this.gameState);
+        const saveData = JSON.stringify(createSaveEnvelope(snapshot, savedAt));
         localStorage.setItem('vibeCodeClicker', saveData);
         // Save tutorial seen status separately
         localStorage.setItem('vibeCodeClicker_tutorial', JSON.stringify({ hasSeenHowToPlay: this.hasSeenHowToPlay }));
-        this.showNotification('Game saved!');
+        if (notify) this.showNotification('Game saved!');
     }
 
     // Load game with migration support for tech debt scale change
@@ -741,13 +699,11 @@ class GameStore {
         const savedData = localStorage.getItem('vibeCodeClicker');
         const tutorialData = localStorage.getItem('vibeCodeClicker_tutorial');
         
-        console.log('Loading game, found data:', !!savedData);
-        
         // Load tutorial status
         if (tutorialData) {
             try {
                 const parsed = JSON.parse(tutorialData);
-                this.hasSeenHowToPlay = parsed.hasSeenHowToPlay || false;
+                this.hasSeenHowToPlay = parsed.hasSeenHowToPlay === true;
             } catch (e) {
                 console.error('Failed to load tutorial data:', e);
             }
@@ -755,33 +711,10 @@ class GameStore {
         
         if (savedData) {
             try {
-                const parsed = JSON.parse(savedData);
-                // Create a fresh default state and merge with saved data
-                this.gameState = { ...defaultState, ...parsed };
-                // Ensure nested objects are properly merged
-                this.gameState.resources = { ...defaultState.resources, ...parsed.resources };
-                this.gameState.upgrades = { ...defaultState.upgrades, ...parsed.upgrades };
-                this.gameState.projects = { ...defaultState.projects, ...parsed.projects };
-                
-                // Handle legacy save data with bonuses
-                if (this.gameState.prestige && parsed.prestige) {
-                    // Preserve tech trees from saved data
-                    if (parsed.prestige.techTrees) {
-                        this.gameState.prestige.techTrees = parsed.prestige.techTrees;
-                    }
-                    // Legacy bonuses are no longer used - they're calculated from techTrees
-                }
-                
-                if (!this.gameState.activeTab) {
-                    this.gameState.activeTab = { projects: 'standard', upgrades: 'vibeCode' };
-                }
+                this.gameState = parseSave(savedData);
                 
                 // Phase 2: Reset hint tracking on load
                 this.debtLowHintShown = false;
-                // Migration: convert old 0-0.5 scale to new 0-5000 scale
-                if (typeof this.gameState.techDebt === 'number' && this.gameState.techDebt <= 0.5) {
-                    this.gameState.techDebt = this.gameState.techDebt * 10000;
-                }
                 this.previousDebtState = this.gameState.techDebt < 1000 ? 'low' : 'high';
                 
                 // Phase 1: Calculate offline gains
@@ -790,7 +723,6 @@ class GameStore {
                     this.applyOfflineGains(gains);
                 }
                 
-                console.log('Game loaded successfully');
             } catch (e) {
                 console.error('Failed to load save:', e);
             }
@@ -805,18 +737,26 @@ class GameStore {
         }
     }
 
+    private resetTransientState() {
+        this.currentPrompt = PROMPT_MESSAGES[0];
+        this.floatTexts = [];
+        this.hints = [];
+        this.debtLowHintShown = false;
+        this.previousDebtState = 'low';
+        this.notificationQueue = [];
+        this.randomEventWaitSeconds = 0;
+        this.randomEventState = { active: false, eventId: null, timer: 0, cooldown: 0 };
+        this.showRandomEventModal = false;
+        this.activeRandomEvent = null;
+        this.activeBuffs = [];
+    }
+
     resetGame() {
         if (confirm('Are you sure you want to reset the game? All progress will be lost!')) {
             localStorage.removeItem('vibeCodeClicker');
             localStorage.removeItem('vibeCodeClicker_tutorial');
-            this.gameState = { ...defaultState };
-            this.currentPrompt = PROMPT_MESSAGES[0];
-            this.floatTexts = [];
-            this.notifications = [];
-            this.hints = [];
-            this.debtLowHintShown = false;
-            this.previousDebtState = 'low';
-            this.notificationQueue = []; // Clear notification queue on reset
+            this.gameState = createDefaultGameState();
+            this.resetTransientState();
             this.hasSeenHowToPlay = false;
             this.showNotification('Game reset!');
         }
@@ -868,8 +808,8 @@ class GameStore {
                     // No event active, countdown cooldown
                     this.randomEventState.cooldown--;
                 } else {
-                    // No event, no cooldown - check for new event trigger
-                    if (Math.floor(Math.random() * RANDOM_EVENT_CONFIG.TRIGGER_CHANCE) === 1) {
+                    this.randomEventWaitSeconds++;
+                    if (shouldTriggerRandomEvent(this.randomEventWaitSeconds)) {
                         this.triggerRandomEvent();
                     }
                 }
@@ -882,7 +822,7 @@ class GameStore {
     startAutoSave() {
         $effect(() => {
             const interval = setInterval(() => {
-                this.saveGame();
+                this.saveGame(false);
             }, 30000);
             
             return () => clearInterval(interval);
@@ -942,7 +882,7 @@ class GameStore {
         }
         this.previousDebtState = currentState;
 
-        const conditions: { check: () => boolean; condition: Hint['condition']; message: string; useNotification?: boolean; cooldownMinutes?: number }[] = [
+        const conditions: { check: () => boolean; condition: Hint['condition']; message: string; useNotification?: boolean }[] = [
             {
                 check: () => this.gameState.techDebt >= TECH_DEBT.DANGER_THRESHOLD,
                 condition: 'debtHigh',
@@ -952,20 +892,18 @@ class GameStore {
                 check: () => isDebtLow && !this.debtLowHintShown,
                 condition: 'debtLow',
                 message: 'Debt low - good time to save LoC',
-                useNotification: true,
-                cooldownMinutes: 5
+                useNotification: true
             },
             {
                 // Only show if prestige is NOT yet available (button will show when available)
                 check: () => !this.isPrestigeAvailable && this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT - 0.1,
                 condition: 'prestigeSoon',
                 message: 'Prestige available soon!',
-                useNotification: true,
-                cooldownMinutes: 10
+                useNotification: true
             }
         ];
 
-        for (const { check, condition, message, useNotification, cooldownMinutes = 1 } of conditions) {
+        for (const { check, condition, message, useNotification } of conditions) {
             if (check() && !this.hints.some(h => h.condition === condition)) {
                 // Check if we've shown a similar notification recently (throttle)
                 const recentNotification = this.notificationQueue.find(
@@ -997,11 +935,6 @@ class GameStore {
     
     dismissHint(id: number) {
         this.hints = this.hints.filter(h => h.id !== id);
-        const cooldownUntil = Date.now() + 60000;
-        this.hintCooldowns = new Set([...this.hintCooldowns, cooldownUntil]);
-        
-        const now = Date.now();
-        this.hintCooldowns = new Set([...this.hintCooldowns].filter(c => c > now));
     }
     
     // Phase 3: Prestige system methods
@@ -1029,11 +962,6 @@ class GameStore {
     performPrestige(path: PrestigePath) {
         const pointsToEarn = this.pendingPrestigePoints;
 
-        // Calculate starting cash (buyout path)
-        const startingCash = (path === 'buyout')
-            ? pointsToEarn * PRESTIGE.STARTING_CASH_PER_POINT
-            : 0;
-
         // Preserve existing tech trees
         const existingTechTrees = this.gameState.prestige?.techTrees ?? {
             buyout: [],
@@ -1050,15 +978,13 @@ class GameStore {
         this.gameState.techDebt = 0; // Reset debt on prestige
         this.gameState.projectsShipped = 0;
 
-        // Apply starting cash bonus (from prestige path + accumulated tech tree bonuses)
-        this.gameState.resources.money = startingCash + this.activeModifiers.startingCashFlat;
-
         // Update prestige state
         if (!this.gameState.prestige) {
             this.gameState.prestige = {
                 prestigePoints: 0,
                 totalPrestiges: 0,
                 pathHistory: [],
+                pathPoints: { buyout: 0, nirvana: 0, linus: 0, learning: 0 },
                 runStartTime: Date.now(),
                 techTrees: existingTechTrees
             };
@@ -1068,10 +994,14 @@ class GameStore {
         this.gameState.prestige.prestigePoints += pointsToEarn;
         this.gameState.prestige.totalPrestiges += 1;
         this.gameState.prestige.pathHistory.push(path);
+        this.gameState.prestige.pathPoints[path] += pointsToEarn;
         this.gameState.prestige.runStartTime = Date.now();
 
         // Preserve tech trees
         this.gameState.prestige.techTrees = existingTechTrees;
+        this.gameState.resources.money =
+            (this.gameState.prestige.pathPoints.buyout * PRESTIGE.STARTING_CASH_PER_POINT) +
+            this.activeModifiers.startingCashFlat;
 
         // Close modals and show notification
         this.showPrestigeModal = false;
@@ -1087,14 +1017,8 @@ class GameStore {
         if (confirm('Are you sure? This will wipe ALL progress including prestige!')) {
             localStorage.removeItem('vibeCodeClicker');
             localStorage.removeItem('vibeCodeClicker_tutorial');
-            this.gameState = { ...defaultState };
-            this.currentPrompt = PROMPT_MESSAGES[0];
-            this.floatTexts = [];
-            this.notifications = [];
-            this.hints = [];
-            this.debtLowHintShown = false;
-            this.previousDebtState = 'low';
-            this.notificationQueue = []; // Clear notification queue on hard reset
+            this.gameState = createDefaultGameState();
+            this.resetTransientState();
             this.hasSeenHowToPlay = false;
             this.showNotification('Full reset complete!');
         }
@@ -1123,6 +1047,7 @@ class GameStore {
     triggerRandomEvent() {
         // Get random event from registry
         const event = EVENT_REGISTRY.getRandomEvent();
+        this.randomEventWaitSeconds = 0;
 
         this.randomEventState = {
             active: true,
@@ -1140,12 +1065,13 @@ class GameStore {
      */
     ignoreRandomEvent() {
         if (!this.randomEventState.active) return;
+        const cooldown = this.activeRandomEvent?.cooldownAfterComplete ?? RANDOM_EVENT_CONFIG.COOLDOWN_DURATION;
 
         this.randomEventState = {
             active: false,
             eventId: null,
             timer: 0,
-            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+            cooldown
         };
         this.activeRandomEvent = null;
 
@@ -1163,7 +1089,7 @@ class GameStore {
             active: false,
             eventId: this.randomEventState.eventId,
             timer: 0,
-            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+            cooldown: this.activeRandomEvent.cooldownAfterComplete
         };
 
         // Show the event modal
@@ -1179,7 +1105,7 @@ class GameStore {
         if (!this.activeRandomEvent) return;
 
         // Calculate performance percentage
-        const performance = maxScore > 0 ? score / maxScore : 1.0;
+        const performance = clamp(maxScore > 0 ? score / maxScore : 1.0, 0, 1);
 
         // Grant all rewards based on performance
         const event = this.activeRandomEvent;
@@ -1189,25 +1115,7 @@ class GameStore {
         let rewardMessage = '';
 
         for (const reward of event.rewards) {
-            // Calculate actual reward amount based on scaling mode
-            let amount = reward.baseAmount;
-            
-            switch (reward.scalingMode) {
-                case 'performance':
-                    amount = reward.baseAmount * performance;
-                    break;
-                case 'tiered':
-                    // Tiered rewards: 90%+ = 2x, 70-89% = 1x, 50-69% = 0.5x, <50% = 0.25x
-                    if (performance >= 0.9) amount = reward.baseAmount * 2;
-                    else if (performance >= 0.7) amount = reward.baseAmount * 1;
-                    else if (performance >= 0.5) amount = reward.baseAmount * 0.5;
-                    else amount = reward.baseAmount * 0.25;
-                    break;
-                case 'flat':
-                default:
-                    // Flat amount, no scaling
-                    break;
-            }
+            const amount = calculateEventRewardAmount(reward, performance);
             
             switch (reward.type) {
                 case 'cash':
@@ -1224,7 +1132,7 @@ class GameStore {
                     break;
                 // Temporary buffs - apply with performance multiplier
                 default:
-                    this.addBuff(event.id, reward, performance);
+                    this.addBuff(event.id, reward, amount);
                     break;
             }
         }
@@ -1256,12 +1164,11 @@ class GameStore {
         // Close modal and clear event
         this.showRandomEventModal = false;
         this.activeRandomEvent = null;
-        this.activeEventState = null;
         this.randomEventState = {
             active: false,
             eventId: null,
             timer: 0,
-            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+            cooldown: event.cooldownAfterComplete
         };
     }
 
@@ -1270,33 +1177,35 @@ class GameStore {
      */
     closeRandomEventModal() {
         this.showRandomEventModal = false;
-        // Event was already ended by engageRandomEvent, cooldown is set
+        this.activeRandomEvent = null;
+        this.randomEventState.eventId = null;
     }
 
     /**
      * Abandon an active event - cancel it without rewards
      */
     abandonRandomEvent() {
-        this.activeEventState = null;
+        if (!this.activeRandomEvent && !this.showRandomEventModal) return;
+        const cooldown = this.activeRandomEvent?.cooldownAfterComplete ?? RANDOM_EVENT_CONFIG.COOLDOWN_DURATION;
         this.showRandomEventModal = false;
         this.activeRandomEvent = null;
         this.randomEventState = {
             active: false,
             eventId: null,
             timer: 0,
-            cooldown: RANDOM_EVENT_CONFIG.COOLDOWN_DURATION
+            cooldown
         };
         this.showNotification('Event abandoned.', 'info');
     }
 
     // ========================================
-    // v0.6: Buff System Methods
+    // v0.6.1: Buff System Methods
     // ========================================
 
     /**
      * Add a temporary buff from an event reward
      */
-    addBuff(sourceEventId: string, reward: import('./event-types').EventReward, performanceMultiplier: number) {
+    addBuff(sourceEventId: string, reward: import('./event-types').EventReward, amount: number) {
         const duration = reward.duration || 300; // Default 5 minutes
         const expiresAt = Date.now() + (duration * 1000);
         
@@ -1304,7 +1213,7 @@ class GameStore {
             id: `buff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             sourceEventId,
             type: reward.type,
-            multiplier: performanceMultiplier,
+            multiplier: amount,
             expiresAt,
             name: this.getBuffDisplayName(reward.type)
         };
@@ -1322,14 +1231,6 @@ class GameStore {
      */
     removeBuff(buffId: string) {
         this.activeBuffs = this.activeBuffs.filter(b => b.id !== buffId);
-    }
-
-    /**
-     * Get active buffs that haven't expired
-     */
-    getActiveBuffs(): ActiveBuff[] {
-        const now = Date.now();
-        return this.activeBuffs.filter(b => b.expiresAt > now);
     }
 
     /**
@@ -1351,7 +1252,7 @@ class GameStore {
     }
 
     // ========================================
-    // v0.6: Debug Event Trigger
+    // v0.6.1: Debug Event Trigger
     // ========================================
 
     /**
@@ -1363,6 +1264,8 @@ class GameStore {
             console.warn(`[DEBUG] Event '${eventId}' not found`);
             return false;
         }
+
+        this.randomEventWaitSeconds = 0;
 
         // Clear any existing event/cooldown
         this.randomEventState = {
@@ -1429,35 +1332,10 @@ class GameStore {
         this.loadGame();
         this.startGameLoop();
         this.startAutoSave();
-        console.log('Idle Vibe Code Quest v0.6 initialized!');
     }
 }
 
 // Export a singleton instance
 export const store = new GameStore();
 
-// Helper functions
-export function formatNumber(num: number): string {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(2) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return Math.floor(num).toString();
-}
-
-export function getProjectLocCost(project: Project, count: number): number {
-    const costMultiplier = Math.pow(1.15, count);
-    return Math.floor(project.locCost * costMultiplier);
-}
-
-export function formatMoney(amount: number): string {
-    if (amount >= 1000000000) {
-        return (amount / 1000000000).toFixed(1) + 'B';
-    } else if (amount >= 1000000) {
-        return (amount / 1000000).toFixed(1) + 'M';
-    } else if (amount >= 10000) {
-        return (amount / 1000).toFixed(1) + 'K';
-    }
-    return amount.toFixed(2);
-}
+export { formatMoney, formatNumber, getProjectLocCost } from './utils';

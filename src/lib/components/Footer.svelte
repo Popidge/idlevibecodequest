@@ -43,11 +43,4 @@
         color: var(--text-primary, #00ff00);
     }
 
-    .debt-indicator {
-        color: var(--text-primary, #00ff00);
-    }
-
-    .debt-indicator.warning {
-        color: var(--text-amber, #ffb000);
-    }
 </style>

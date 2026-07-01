@@ -34,7 +34,6 @@
         const parts: string[] = [];
 
         // Check for special flags first (these are always shown alone if present)
-        if (modifiers.unlockLegacyWhisperer) return 'Legacy Whisperer';
         if (modifiers.unlockCodeZen) return 'Code Zen';
 
         // Flat LoC values - show absolute LoC

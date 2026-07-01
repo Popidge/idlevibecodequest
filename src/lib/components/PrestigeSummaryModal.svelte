@@ -15,19 +15,12 @@
         }
     }
     
-    function formatDuration(ms: number): string {
-        const minutes = Math.floor(ms / 60000);
-        const seconds = Math.floor((ms % 60000) / 1000);
-        return `${minutes}m ${seconds}s`;
-    }
 </script>
 
 {#if store.showPrestigeSummaryModal}
     {@const summary = store.prestigeSummary}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-backdrop" onclick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Prestige Summary">
-        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+    <dialog open class="modal-backdrop" onclick={handleBackdropClick} aria-label="Prestige Summary">
+        <div class="modal-content">
             <div class="modal-header">┌─ PRESTIGE AVAILABLE! ───────┐</div>
             <div class="modal-body">
                 <div class="celebration">✨ ⭐ ✨</div>
@@ -75,11 +68,16 @@
             </div>
             <div class="modal-corner">└─────────────────────────────┘</div>
         </div>
-    </div>
+    </dialog>
 {/if}
 
 <style>
     .modal-backdrop {
+        margin: 0;
+        max-width: none;
+        max-height: none;
+        border: 0;
+        padding: 0;
         position: fixed;
         top: 0;
         left: 0;

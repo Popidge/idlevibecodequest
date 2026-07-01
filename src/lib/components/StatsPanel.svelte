@@ -156,14 +156,6 @@
         border-right: 1px solid var(--border-color, #00ff00);
     }
 
-    .panel-footer {
-        color: var(--text-primary, #00ff00);
-        font-size: 12px;
-        white-space: pre;
-        padding: 4px 0;
-        flex-shrink: 0;
-    }
-
     .stats-content {
         display: flex;
         flex-direction: column;

@@ -24,12 +24,17 @@
         upgradeCostMultiplier: config.upgradeCostMultiplier,
         prestigeThresholdPercent: config.prestigeThresholdPercent,
         startingCashPerPoint: config.startingCashPerPoint,
+        prestigePath: config.prestigePath,
     });
 
     function runSimulation() {
         const startTime = performance.now();
         result = simulateGameplay(config, 3600);
         simulationTime = performance.now() - startTime;
+    }
+
+    function handleBackdropClick(event: MouseEvent) {
+        if (event.target === event.currentTarget) onClose();
     }
 
     // Auto-run on mount and when config changes
@@ -40,8 +45,8 @@
     });
 </script>
 
-<div class="modal-backdrop" onclick={onClose} role="dialog" aria-modal="true" aria-label="Game Balance Tuning">
-    <div class="modal-content tuning-modal" onclick={(e) => e.stopPropagation()}>
+<dialog open class="modal-backdrop" onclick={handleBackdropClick} aria-label="Game Balance Tuning">
+    <div class="modal-content tuning-modal">
         <div class="modal-header">
             <span class="header-title">┌─ GAME BALANCE TUNING ─┐</span>
             <button class="close-btn" onclick={onClose}>[X]</button>
@@ -72,10 +77,15 @@
         
         <div class="modal-corner">└─────────────────────────────┘</div>
     </div>
-</div>
+</dialog>
 
 <style>
     .modal-backdrop {
+        margin: 0;
+        max-width: none;
+        max-height: none;
+        border: 0;
+        padding: 0;
         position: fixed;
         top: 0;
         left: 0;

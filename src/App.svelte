@@ -23,7 +23,7 @@
     import RandomEventModal from './lib/components/RandomEventModal.svelte';
     // How to Play modal
     import HowToPlayModal from './lib/components/HowToPlayModal.svelte';
-    // v0.6: Debug Event Trigger
+    // v0.6.1: Debug Event Trigger
     import DebugEventModal from './lib/components/DebugEventModal.svelte';
     // Theme system
     import ThemeToggle from './lib/components/ThemeToggle.svelte';
@@ -42,6 +42,19 @@
 
     onMount(() => {
         store.init();
+        const saveBeforeUnload = () => store.saveGame(false);
+        const saveWhenHidden = () => {
+            if (document.visibilityState === 'hidden') saveBeforeUnload();
+        };
+        window.addEventListener('beforeunload', saveBeforeUnload);
+        window.addEventListener('pagehide', saveBeforeUnload);
+        document.addEventListener('visibilitychange', saveWhenHidden);
+        return () => {
+            window.removeEventListener('beforeunload', saveBeforeUnload);
+            window.removeEventListener('pagehide', saveBeforeUnload);
+            document.removeEventListener('visibilitychange', saveWhenHidden);
+            store.saveGame(false);
+        };
     });
 
     function toggleTuning() {
@@ -176,7 +189,7 @@
         <TuningModal onClose={toggleTuning} />
     {/if}
 
-    <!-- v0.6: Debug Event Trigger modal -->
+    <!-- v0.6.1: Debug Event Trigger modal -->
     {#if isDebugMode() && showDebugEvents}
         <DebugEventModal onClose={toggleDebugEvents} />
     {/if}
