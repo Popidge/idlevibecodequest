@@ -36,6 +36,8 @@
     import MobileActionArea from './lib/components/mobile/MobileActionArea.svelte';
     import MobileTabBar from './lib/components/mobile/MobileTabBar.svelte';
     import MobileInfoTab from './lib/components/mobile/MobileInfoTab.svelte';
+    import DesktopStatusBar from './lib/components/desktop/DesktopStatusBar.svelte';
+    import DesktopRail from './lib/components/desktop/DesktopRail.svelte';
 
     let showTuning = $state(false);
     let showDebugEvents = $state(false);
@@ -77,12 +79,12 @@
 <div class="terminal-dashboard">
     <!-- Desktop Layout - Full 3-column grid -->
     <div class="desktop-layout">
-        <!-- Theme Toggle (centered top) -->
-        <ThemeToggle />
-        
-        <!-- Row 1: Title, Notifications, Debug -->
-        <TitlePanel />
-        <NotificationBar />
+        <header class="desktop-header">
+            <div class="desktop-brand">idle vibe code quest <span>v0.6.1</span></div>
+            <ThemeToggle />
+        </header>
+
+        <DesktopStatusBar />
 
         <!-- Debug Toolbar (top-right of row 1) -->
         {#if isDebugMode()}
@@ -99,10 +101,11 @@
             </div>
         {/if}
 
-        <!-- Row 2: Main Content -->
-        <StatsPanel />
-        <ProjectsPanel />
-        <UpgradesPanel />
+        <div class="desktop-body">
+            <DesktopRail />
+            <main class="desktop-workbench"><ProjectsPanel /></main>
+            <aside class="desktop-inspector"><UpgradesPanel /></aside>
+        </div>
 
         <!-- Row 3: Action Row (Prompt + Save/Reset) -->
         <ActionRow />
@@ -213,22 +216,34 @@
         position: relative;
     }
 
+    @media (min-width: 1101px) {
+        .terminal-dashboard { max-width:none; }
+        .desktop-layout > .debug-toolbar { top:12px; right:300px; }
+    }
+
     /* Desktop Layout */
     .desktop-layout {
-        display: grid;
-        grid-template-columns: 200px 1fr 1fr;
-        grid-template-rows: auto 1fr auto auto;
-        gap: 10px;
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
         background-color: var(--terminal-bg, #0d0d0d);
         border: 2px solid var(--border-color, #00ff00);
         box-shadow: 0 0 30px rgba(212, 134, 92, 0.3);
-        padding: 10px;
+        padding: 0;
         opacity: 1;
         visibility: visible;
         transition: opacity 0.3s ease, visibility 0.3s ease;
     }
+
+    .desktop-header { min-height:58px; padding:0 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid color-mix(in srgb,var(--border-color) 40%,transparent); position:relative; }
+    .desktop-brand { font-size:20px; font-weight:bold; letter-spacing:1px; }
+    .desktop-brand span { margin-left:8px; padding:3px 8px; border-radius:4px; background:var(--button-bg); color:var(--text-dim); font-size:11px; font-weight:normal; }
+    .desktop-header :global(.theme-toggle-container) { position:static; }
+    .desktop-body { flex:1; min-height:0; display:grid; grid-template-columns:220px minmax(460px,1.55fr) minmax(320px,1fr); grid-template-areas:"rail workbench inspector"; }
+    .desktop-workbench { grid-area:workbench; min-width:0; min-height:0; padding:14px 8px 10px 12px; }
+    .desktop-inspector { grid-area:inspector; min-width:0; min-height:0; padding:14px 12px 10px 4px; }
+    .desktop-workbench :global(.projects-panel), .desktop-inspector :global(.upgrades-panel) { height:100%; }
 
     /* Tablet Layout - Sidebar + Stacked Panels */
     .tablet-layout {
