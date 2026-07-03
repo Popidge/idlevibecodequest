@@ -232,6 +232,7 @@
 
     .tab {
         background-color: rgba(26, 26, 26, 0.8);
+        color: var(--text-white, #fff);
         border: 1px solid var(--tab-color, #00ff00);
         padding: 8px 4px;
         cursor: pointer;

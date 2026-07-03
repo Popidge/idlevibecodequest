@@ -23,7 +23,7 @@
     import RandomEventModal from './lib/components/RandomEventModal.svelte';
     // How to Play modal
     import HowToPlayModal from './lib/components/HowToPlayModal.svelte';
-    // v0.6.1: Debug Event Trigger
+    // v0.6.2: Debug Event Trigger
     import DebugEventModal from './lib/components/DebugEventModal.svelte';
     // Theme system
     import ThemeToggle from './lib/components/ThemeToggle.svelte';
@@ -80,7 +80,7 @@
     <!-- Desktop Layout - Full 3-column grid -->
     <div class="desktop-layout">
         <header class="desktop-header">
-            <div class="desktop-brand">idle vibe code quest <span>v0.6.1</span></div>
+            <div class="desktop-brand">idle vibe code quest <span>v0.6.2</span></div>
             <ThemeToggle />
         </header>
 
@@ -192,7 +192,7 @@
         <TuningModal onClose={toggleTuning} />
     {/if}
 
-    <!-- v0.6.1: Debug Event Trigger modal -->
+    <!-- v0.6.2: Debug Event Trigger modal -->
     {#if isDebugMode() && showDebugEvents}
         <DebugEventModal onClose={toggleDebugEvents} />
     {/if}

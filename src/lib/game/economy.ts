@@ -23,6 +23,18 @@ export function calculateDebtPenaltyFactor(
     return 1 - (debtRatio / 2) * (1 - clamp(mitigation, 0, 1));
 }
 
+export function calculateDebtAccumulation(locGenerated: number, accumulationPerLoc: number): number {
+    const generated = Math.max(0, locGenerated);
+    const linearLoc = Math.min(generated, TECH_DEBT.LINEAR_LOC_THRESHOLD);
+    const excessLoc = Math.max(0, generated - TECH_DEBT.LINEAR_LOC_THRESHOLD);
+    const softenedExcess = excessLoc / Math.pow(
+        1 + excessLoc / 100,
+        TECH_DEBT.HIGH_RATE_SOFTENING
+    );
+
+    return (linearLoc + softenedExcess) * accumulationPerLoc * TECH_DEBT.ACCUMULATION_SCALE;
+}
+
 export function calculateDebtReductionCosts(amount: number, project: Project): { loc: number; cash: number } {
     const loc = Math.floor(Math.max(0, amount) / 2);
     return { loc, cash: Math.floor(loc * (project.locCost / project.reward)) };
