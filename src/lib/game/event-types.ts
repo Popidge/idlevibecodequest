@@ -1,4 +1,4 @@
-// Idle Vibe Code Quest - Random Event System Types (v0.6.1)
+// Idle Vibe Code Quest - Random Event System Types (v0.6.2)
 // Interactive mini-game event system with unified architecture
 
 import type { Resources } from './types';

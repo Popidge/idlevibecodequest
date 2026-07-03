@@ -34,7 +34,7 @@
     <div class="info-section">
         <h3 class="section-title">About</h3>
         <div class="about-text">
-            <p>Idle Vibe Code Quest v0.6.1</p>
+            <p>Idle Vibe Code Quest v0.6.2</p>
             <p class="credits">Vibe Coded by JT</p>
             <p class="auto-save">Auto saves every 30s</p>
         </div>

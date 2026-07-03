@@ -6,7 +6,7 @@ import type { ActiveBuff, RandomEventConfig } from './event-types';
 import { EVENT_REGISTRY, RANDOM_EVENT_CONFIG, shouldTriggerRandomEvent } from './event-registry';
 import { formatMoney, formatNumber, getMaxUpgradeLevel, getProjectLocCost, getUnlockedProjects, getUpgradeCost } from './utils';
 import { createDefaultGameState, createSaveEnvelope, parseSave } from './state';
-import { calculateDebtPenaltyFactor, calculateDebtReductionCosts, calculateEffectivePassiveLocRate, calculateEventRewardAmount, calculatePrestigePoints, clamp, getPrestigePathModifiers } from './economy';
+import { calculateDebtAccumulation, calculateDebtPenaltyFactor, calculateDebtReductionCosts, calculateEffectivePassiveLocRate, calculateEventRewardAmount, calculatePrestigePoints, clamp, getPrestigePathModifiers } from './economy';
 
 // Default modifiers object
 const defaultModifiers: SystemModifiers = {
@@ -76,7 +76,7 @@ class GameStore {
     activeRandomEvent = $state<RandomEventConfig | null>(null);
     randomEventWaitSeconds = 0;
     
-    // v0.6.1: Enhanced Random Event System
+    // v0.6.2: Enhanced Random Event System
     activeBuffs = $state<ActiveBuff[]>([]);
 
     // ========================================
@@ -309,7 +309,7 @@ class GameStore {
     }
 
     // ========================================
-    // EVENT BUFF MULTIPLIERS (v0.6.1)
+    // EVENT BUFF MULTIPLIERS (v0.6.2)
     // ========================================
     
     /**
@@ -395,10 +395,14 @@ class GameStore {
     get upgradePercentage() {
         return this.totalUpgradesOwned / this.totalUpgradesAvailable;
     }
+
+    get prestigeUpgradeTarget() {
+        return Math.ceil(this.totalUpgradesAvailable * PRESTIGE.THRESHOLD_PERCENT);
+    }
     
     // Is prestige available at 70% threshold?
     get isPrestigeAvailable() {
-        return this.upgradePercentage >= PRESTIGE.THRESHOLD_PERCENT;
+        return this.totalUpgradesOwned >= this.prestigeUpgradeTarget;
     }
     
     // Calculate prestige points to earn based on upgrade investment
@@ -477,6 +481,20 @@ class GameStore {
         return -1; // All nodes purchased
     }
 
+    getAffordableTechTreePath(preferredPath?: TechTreePath): TechTreePath | null {
+        const paths: TechTreePath[] = ['buyout', 'nirvana', 'linus', 'learning'];
+        const orderedPaths = preferredPath
+            ? [preferredPath, ...paths.filter(path => path !== preferredPath)]
+            : paths;
+
+        for (const path of orderedPaths) {
+            const nextNodeIndex = this.getNextNodeIndex(path);
+            if (nextNodeIndex >= 0 && this.canPurchaseNode(path, nextNodeIndex)) return path;
+        }
+
+        return null;
+    }
+
     // Check if vertical integration is unlocked (buyout tree node 10, index 9)
     get hasVerticalIntegration() {
         return this.getPurchasedNodes('buyout').includes(9);
@@ -518,7 +536,7 @@ class GameStore {
 
     // Accumulate tech debt from LoC generated (active or passive)
     accumulateDebt(locGenerated: number) {
-        const debtToAdd = (locGenerated * this.effectiveDebtAccumulationPerLoc) * 0.1;
+        const debtToAdd = calculateDebtAccumulation(locGenerated, this.effectiveDebtAccumulationPerLoc);
         this.gameState.techDebt = Math.min(
             this.gameState.techDebt + debtToAdd,
             TECH_DEBT.MAX_LEVEL
@@ -1003,10 +1021,16 @@ class GameStore {
             (this.gameState.prestige.pathPoints.buyout * PRESTIGE.STARTING_CASH_PER_POINT) +
             this.activeModifiers.startingCashFlat;
 
-        // Close modals and show notification
+        const affordableTechTreePath = this.getAffordableTechTreePath(path);
+
+        // Hand off directly to an affordable tech tree perk when one is available.
         this.showPrestigeModal = false;
         this.selectedPrestigePath = null;
         this.pendingPrestigePoints = 0;
+        if (affordableTechTreePath) {
+            this.activeTechTreeTab = affordableTechTreePath;
+            this.showTechTreeModal = true;
+        }
 
         // Clear notification queue on prestige so hints can appear in new run
         this.notificationQueue = [];
@@ -1199,7 +1223,7 @@ class GameStore {
     }
 
     // ========================================
-    // v0.6.1: Buff System Methods
+    // v0.6.2: Buff System Methods
     // ========================================
 
     /**
@@ -1252,7 +1276,7 @@ class GameStore {
     }
 
     // ========================================
-    // v0.6.1: Debug Event Trigger
+    // v0.6.2: Debug Event Trigger
     // ========================================
 
     /**

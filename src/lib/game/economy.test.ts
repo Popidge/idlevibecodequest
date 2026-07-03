@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PRESTIGE, PROJECTS } from './constants';
 import type { EventReward } from './event-types';
 import {
+    calculateDebtAccumulation,
     calculateDebtPenaltyFactor,
     calculateDebtReductionCosts,
     calculateEffectivePassiveLocRate,
@@ -11,6 +12,14 @@ import {
 } from './economy';
 
 describe('debt calculations', () => {
+    it('keeps early-game debt linear and softens high LoC rates', () => {
+        expect(calculateDebtAccumulation(1, 1)).toBe(0.1);
+        expect(calculateDebtAccumulation(10, 1)).toBe(1);
+        expect(calculateDebtAccumulation(100, 1)).toBeLessThan(10);
+        expect(calculateDebtAccumulation(1000, 1)).toBeLessThan(100);
+        expect(calculateDebtAccumulation(1000, 1)).toBeGreaterThan(calculateDebtAccumulation(100, 1));
+    });
+
     it('progressively mitigates the standard debt penalty', () => {
         expect(calculateDebtPenaltyFactor(5000, 0, false)).toBe(0.5);
         expect(calculateDebtPenaltyFactor(5000, 0.5, false)).toBe(0.75);

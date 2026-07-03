@@ -132,6 +132,9 @@ export const TECH_DEBT = {
     WARNING_THRESHOLD: 1000,               // Show clear button at 20%
     DANGER_THRESHOLD: 4000,                // Show warning at 80%
     BASE_ACCUMULATION: 1,                  // Base debt per LoC generated (before modifiers)
+    ACCUMULATION_SCALE: 0.1,               // Converts generated LoC into debt units
+    LINEAR_LOC_THRESHOLD: 10,              // Keep the opening-game accumulation unchanged
+    HIGH_RATE_SOFTENING: 0.15,             // Gently reduce accumulation from large LoC bursts
     PRESTIGE_MODIFIER_PER_POINT: 0.01,     // Each prestige point reduces accumulation by 1%
     MIN_REDUCTION: 50,                     // Minimum debt reduction amount (1% display)
 } as const;

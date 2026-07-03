@@ -117,6 +117,16 @@
                     ({store.gameState.prestige?.totalPrestiges ?? 0} prestiges)
                 </span>
             </div>
+            {#if (store.gameState.prestige?.totalPrestiges ?? 0) > 0}
+                <div class="prestige-progress">
+                    <div class="prestige-progress-label">NEXT PRESTIGE</div>
+                    <ProgressBar
+                        current={store.totalUpgradesOwned}
+                        max={store.prestigeUpgradeTarget}
+                        label={`${store.totalUpgradesOwned} / ${store.prestigeUpgradeTarget} pts`}
+                    />
+                </div>
+            {/if}
         </div>
 
         <!-- How to Play Button -->
@@ -367,6 +377,20 @@
     .prestige-summary-value .details {
         color: var(--text-dim, #008800);
         font-size: 10px;
+    }
+
+    .prestige-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-top: 9px;
+    }
+
+    .prestige-progress-label {
+        color: var(--text-dim, #008800);
+        font-size: 9px;
+        letter-spacing: 1px;
     }
 
     /* Tablet Styles (768px - 1100px) */
